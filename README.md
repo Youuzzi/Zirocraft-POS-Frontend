@@ -1,16 +1,24 @@
-# React + Vite
+# Zirocraft POS - Frontend 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Selamat datang di repository Frontend **Zirocraft POS**, sebuah sistem Point of Sales (Kasir) modern yang dibangun untuk efisiensi transaksi. Proyek ini merupakan bagian dari ekosistem Fullstack Spring Boot & React.
 
-Currently, two official plugins are available:
+## 🛠️ Tech Stack
+- **React.js** (Vite)
+- **Tailwind CSS** / **Bootstrap** (sesuaikan yang kamu pakai)
+- **Axios** (untuk integrasi API)
+- **React Router Dom**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Fitur Utama (Ongoing)
+- Dashboard Penjualan yang intuitif.
+- Manajemen Produk & Inventaris.
+- Sistem Kasir (Checkout) yang responsif.
+- Integrasi real-time dengan Backend API.
 
-## React Compiler
+## 🚀 Cara Menjalankan Project
+1. Clone repository ini.
+2. Jalankan `npm install` untuk menginstall library.
+3. Buat file `.env` dan sesuaikan `VITE_API_URL` ke backend kamu.
+4. Jalankan `npm run dev`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+*Developed with ❤️ by [Yozi Heru Maulana](https://github.com/Youuzzi)*
