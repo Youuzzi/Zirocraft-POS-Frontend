@@ -1,0 +1,22 @@
+/* --- 1. IMPORT FONT POPPINS DARI GOOGLE --- */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+/* --- 2. TERAPKAN KE SELURUH APLIKASI --- */
+body {
+  margin: 0;
+  /* Ini kuncinya: Panggil Poppins sebagai font utama */
+  font-family: "Poppins", sans-serif;
+
+  /* Ini biar tulisannya halus di layar (antialiasing) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Biar warna background agak abu dikit (biar mata gak sakit lihat putih terang) */
+  background-color: #f8f9fa;
+}
+
+/* --- (Opsional) Tambahan biar kodingan lebih rapi --- */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}

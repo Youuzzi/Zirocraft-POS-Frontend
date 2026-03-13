@@ -1,0 +1,145 @@
+/* --- FILE: src/CategoryList/CategoryList.css --- */
+
+/* 1. Container Utama */
+.category-section {
+  width: 100%;
+  padding-bottom: 25px;
+}
+
+/* 2. Area Scroll Horizontal */
+.category-scroll-container {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto; /* Scrollbar muncul otomatis CUMA kalau penuh */
+  padding: 10px 5px 25px 5px; /* Padding bawah lega untuk bayangan hover */
+
+  /* UX: Mencegah layout bergeser saat scrollbar muncul/hilang */
+  scrollbar-gutter: stable;
+}
+
+/* --- PERBAIKAN SCROLLBAR (GHOST MODE) --- */
+.category-scroll-container::-webkit-scrollbar {
+  height: 10px; /* Tinggi batang scroll */
+}
+
+/* TRACK (JALURNYA): Dibuat Transparan biar bersih! */
+.category-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+/* THUMB (BATANGNYA): Warna abu elegan */
+.category-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #495057;
+  border-radius: 10px;
+  border: 2px solid #222; /* Border biar terlihat 'floating' */
+}
+
+/* Hover Thumb: Jadi lebih terang pas didekati mouse */
+.category-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: #6c757d;
+}
+
+/* --- 3. DESAIN CARD (KIOSK STYLE / FULL IMAGE) --- */
+.category-card {
+  min-width: 120px;
+  background-color: #212529;
+  border: 1px solid #343a40;
+  border-radius: 16px;
+  padding: 0; /* Padding 0 biar gambar nempel pinggir */
+  overflow: hidden; /* Biar gambar gak keluar dari sudut bulat */
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  color: #adb5bd;
+  user-select: none;
+  text-align: center;
+  position: relative;
+}
+
+/* Hover Effect */
+.category-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+  border-color: #0dcaf0;
+}
+
+/* Hover: Zoom Image Effect */
+.category-card:hover .cat-icon img {
+  transform: scale(1.1);
+}
+
+/* Active State */
+.category-card.active {
+  border-color: #0dcaf0;
+  box-shadow: 0 0 20px rgba(13, 202, 240, 0.4);
+}
+
+.category-card.active .cat-name {
+  background-color: #0dcaf0;
+  color: #000;
+  font-weight: 800;
+}
+
+/* --- 4. AREA GAMBAR (FULL WIDTH) --- */
+.cat-icon {
+  width: 100%;
+  height: 90px; /* Tinggi standar di HP */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1d20;
+  margin: 0;
+  border-bottom: 1px solid #343a40;
+  overflow: hidden;
+}
+
+/* Ikon Default (kalau tidak ada gambar) */
+.cat-icon i {
+  font-size: 32px;
+}
+
+/* Gambar Produk */
+.cat-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+/* --- 5. AREA TEKS (PANEL BAWAH) --- */
+.cat-name {
+  width: 100%;
+  padding: 10px 5px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  background-color: #212529;
+  transition: all 0.3s ease;
+}
+
+/* --- 🖥️ MEDIA QUERY: LAYAR BESAR (PC/MONITOR KASIR) --- */
+@media (min-width: 992px) {
+  .category-card {
+    min-width: 150px; /* Lebar Kartu Desktop */
+  }
+
+  .cat-icon {
+    height: 110px; /* Gambar Lebih Tinggi */
+  }
+
+  .cat-icon i {
+    font-size: 40px;
+  }
+
+  .cat-name {
+    padding: 12px 5px;
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,61 @@
+/* --- 1. CONTAINER UTAMA (LAYOUT DASAR) --- */
+.category-container {
+  width: 100%; /* Paksa lebar penuh 100% */
+  min-height: 90vh; /* Tinggi minimal setara layar */
+  background-color: #222; /* Background utama gelap */
+
+  /* Flexbox untuk layout Kiri-Kanan */
+  display: flex;
+  flex-direction: row; /* Default: Bersebelahan */
+  gap: 25px; /* Jarak antar kotak lebih lega */
+  padding: 2rem; /* Jarak dari pinggir layar */
+  box-sizing: border-box; /* Agar padding tidak bikin scroll samping */
+}
+
+/* --- 2. KOLOM KIRI (FORM INPUT) --- */
+.left-column {
+  flex: 1; /* Ambil 1 bagian ruang (25%) */
+  background-color: #2c3034;
+  padding: 25px;
+  border-radius: 12px; /* Sudut lebih membulat (Modern) */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Bayangan lebih halus & dalam */
+  height: fit-content; /* Tinggi menyesuaikan isi form */
+  border: 1px solid #3a3f44; /* Garis tepi tipis biar tegas */
+}
+
+/* --- 3. KOLOM KANAN (TABEL LIST) --- */
+.right-column {
+  flex: 3; /* Ambil 3 bagian ruang (75%) - LEBIH LEBAR */
+  background-color: #2c3034;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid #3a3f44;
+  overflow-x: auto; /* Biar tabel bisa di-scroll kalau layar sempit */
+}
+
+/* --- 4. TYPOGRAPHY (JUDUL) --- */
+h2 {
+  color: #fff;
+  font-weight: 700; /* Lebih tebal biar gagah */
+  letter-spacing: 0.5px;
+  border-bottom: 3px solid #0dcaf0; /* Garis Cyan lebih tebal */
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+  font-size: 1.5rem;
+}
+
+/* --- 5. RESPONSIVE (UPDATE PENTING!) --- */
+/* Kalau layar kurang dari 992px (Tablet Portrait / HP), ubah jadi tumpuk */
+@media (max-width: 992px) {
+  .category-container {
+    flex-direction: column; /* Ubah jadi Atas-Bawah */
+    padding: 1rem; /* Kurangi padding biar muat di HP */
+  }
+
+  .left-column,
+  .right-column {
+    width: 100%; /* Lebar full di layar kecil */
+    flex: none; /* Matikan rasio 1:3 */
+  }
+}

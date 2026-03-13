@@ -1,0 +1,118 @@
+/* --- 1. LAYOUT UTAMA --- */
+.pos-container {
+  width: 100%;
+  min-height: 90vh;
+  background-color: #222;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden; /* Mencegah scroll samping (horizontal) */
+}
+
+/* --- 2. KOLOM KIRI: DAFTAR PRODUK --- */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+/* KARTU PRODUK */
+.product-card {
+  background-color: #2c3034;
+  border: 1px solid #3a3f44;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  border-color: #0dcaf0;
+  box-shadow: 0 5px 15px rgba(13, 202, 240, 0.2);
+}
+
+.product-img-box {
+  width: 100%;
+  height: 120px;
+  background-color: #3a3f44;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-size: 2rem;
+}
+
+.product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- 3. KOLOM KANAN: KERANJANG (CART) --- */
+.cart-sidebar {
+  background-color: #2c3034;
+  border: 1px solid #3a3f44;
+  border-radius: 12px;
+  height: calc(100vh - 100px);
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Mencegah konten bocor keluar rounded corners */
+}
+
+/* AREA CART ITEMS (Normal Mode) */
+.cart-items {
+  flex: 1;
+  overflow-y: auto; /* Scrollbar muncul normal jika ada isi */
+  padding: 15px;
+  scroll-behavior: smooth;
+  scrollbar-gutter: auto;
+}
+
+.cart-footer {
+  background-color: #222;
+  padding: 20px;
+  border-top: 1px solid #3a3f44;
+  border-radius: 0 0 12px 12px;
+}
+
+/* --- 4. SCROLLBAR KERANJANG (NORMAL STATE) --- */
+.cart-items::-webkit-scrollbar {
+  width: 6px;
+}
+.cart-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cart-items::-webkit-scrollbar-thumb {
+  background-color: #495057;
+  border-radius: 10px;
+}
+.cart-items::-webkit-scrollbar-thumb:hover {
+  background-color: #6c757d;
+}
+
+/* --- 5. CLASS "PEMBUNUH" SCROLLBAR (SAAT KOSONG) --- */
+/* Class ini dipanggil lewat React saat cart.length === 0 */
+.cart-hidden {
+  overflow-y: hidden !important; /* Matikan fungsi scroll */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* Edge Lama */
+  padding-right: 0 !important;
+}
+
+/* Hapus fisik scrollbar dari layar Chrome/Safari */
+.cart-hidden::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  background: transparent !important;
+}
+
+/* --- 6. RESPONSIVE --- */
+@media (max-width: 992px) {
+  .cart-sidebar {
+    height: auto;
+    position: static;
+    margin-top: 20px;
+  }
+}
