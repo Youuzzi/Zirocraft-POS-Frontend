@@ -1,6 +1,5 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-// 1. Import Toaster-nya
 import { Toaster } from "react-hot-toast";
 import Menubar from "./components/Menubar/Menubar.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
