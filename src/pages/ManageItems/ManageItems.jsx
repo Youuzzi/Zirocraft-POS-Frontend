@@ -1,29 +1,39 @@
-import React, { useState } from "react";
-// Pastikan path CSS ini benar sesuai folder kamu
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "../ManageCategory/ManageCategory.css";
 
 const ManageItems = () => {
-  // --- DATA DUMMY KATEGORI (Pura-pura dari Database) ---
-  // Nanti bagian ini kita ganti pakai data asli dari Backend Java
-  const dummyCategories = [
-    { id: 1, name: "Minuman (Coffee)" },
-    { id: 2, name: "Makanan Berat" },
-    { id: 3, name: "Snack & Dessert" },
-    { id: 4, name: "Topping & Add-ons" },
-  ];
-
-  // --- MEMORI SEMENTARA (STATE) ---
+  const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
 
-  // State untuk form input
+  // State Form
   const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState(""); // <--- STATE BARU UNTUK KATEGORI
+  const [categoryId, setCategoryId] = useState("");
   const [price, setPrice] = useState("");
-  const [stock, setStock] = useState("");
+  const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // --- FUNGSI: MENGURUS UPLOAD FOTO ---
+  // URL API sesuai tutorial Bushan (Sesuaikan port jika berbeda)
+  const API_BASE_URL = "http://localhost:8080/api/version1.0";
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      const resCat = await axios.get(`${API_BASE_URL}/categories`);
+      const resItems = await axios.get(`${API_BASE_URL}/items`);
+
+      setCategories(resCat.data);
+      setProducts(resItems.data);
+    } catch (err) {
+      console.error("Gagal mengambil data dari DB:", err);
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -32,192 +42,187 @@ const ManageItems = () => {
     }
   };
 
-  // --- FUNGSI: SIMPAN PRODUK ---
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-
-    // Validasi: Kategori juga wajib diisi sekarang!
-    if (!name || !categoryId || !price || !stock) {
-      alert("Mohon lengkapi semua data (termasuk Kategori)!");
+    if (!name || !categoryId || !price || !image) {
+      alert("Lengkapi semua data, Zi!");
       return;
     }
 
-    // Mencari nama kategori berdasarkan ID yang dipilih (Untuk tampilan di tabel aja)
-    const selectedCategory = dummyCategories.find((c) => c.id == categoryId);
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("file", image);
+    // Bagian ini harus JSON stringify sesuai standar @RequestPart di Spring Boot
+    formData.append(
+      "item",
+      JSON.stringify({
+        name: name,
+        price: price,
+        categoryID: categoryId, // Kirim ID Kategori yang dipilih
+        description: description,
+      }),
+    );
 
-    const newProduct = {
-      id: Date.now(),
-      name: name,
-      categoryName: selectedCategory ? selectedCategory.name : "Unknown", // Simpan nama kategorinya
-      price: price,
-      stock: stock,
-      imgUrl: preview,
-    };
+    try {
+      await axios.post(`${API_BASE_URL}/admin/items`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    setProducts([...products, newProduct]);
+      alert("Menu Makanan Berhasil Disimpan!");
+      fetchInitialData(); // Refresh daftar menu di tabel kanan
+      resetForm();
+    } catch (err) {
+      console.error("Gagal simpan produk:", err);
+      alert("Gagal konek ke Backend!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Reset Form setelah save
+  const resetForm = () => {
     setName("");
-    setCategoryId(""); // Reset dropdown
+    setCategoryId("");
     setPrice("");
-    setStock("");
+    setDescription("");
     setImage(null);
     setPreview(null);
   };
 
-  // --- FUNGSI: HAPUS PRODUK ---
-  const handleDelete = (id) => {
-    setProducts(products.filter((item) => item.id !== id));
+  const handleDelete = async (id) => {
+    if (window.confirm("Hapus menu ini dari database?")) {
+      try {
+        await axios.delete(`${API_BASE_URL}/admin/items/${id}`);
+        fetchInitialData();
+      } catch (err) {
+        console.error("Gagal hapus:", err);
+      }
+    }
   };
 
   return (
     <div className="category-container">
-      {/* --- KOLOM KIRI: FORM --- */}
+      {/* FORM INPUT MENU */}
       <div className="left-column text-light">
-        <h2>Add Product</h2>
+        <h2>{loading ? "Saving..." : "Add New Menu"}</h2>
         <form onSubmit={handleSave}>
-          {/* INPUT NAMA PRODUK */}
           <div className="mb-3">
-            <label className="form-label">Product Name</label>
+            <label className="form-label">Menu Name</label>
             <input
               type="text"
               className="form-control bg-dark text-light border-secondary"
-              placeholder="Contoh: Kopi Susu"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
             />
           </div>
 
-          {/* --- INPUT KATEGORI (YANG BARU DITAMBAHKAN) --- */}
           <div className="mb-3">
             <label className="form-label">Category</label>
             <select
               className="form-select bg-dark text-light border-secondary"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
+              required
             >
               <option value="">-- Select Category --</option>
-              {dummyCategories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
+              {categories.map((cat) => (
+                /* PAKAI cat.category_id SESUAI DB KAMU */
+                <option key={cat.category_id} value={cat.category_id}>
                   {cat.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* INPUT HARGA */}
           <div className="mb-3">
             <label className="form-label">Price (Rp)</label>
             <input
               type="number"
               className="form-control bg-dark text-light border-secondary"
-              placeholder="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              required
             />
           </div>
 
-          {/* INPUT STOK */}
           <div className="mb-3">
-            <label className="form-label">Stock</label>
-            <input
-              type="number"
-              className="form-control bg-dark text-light border-secondary"
-              placeholder="0"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-            />
-          </div>
-
-          {/* INPUT FOTO */}
-          <div className="mb-3">
-            <label className="form-label">Product Image</label>
+            <label className="form-label">Photo</label>
             <input
               type="file"
               className="form-control bg-dark text-light border-secondary"
               onChange={handleImageChange}
+              required
             />
             {preview && (
-              <div className="mt-2">
-                <img
-                  src={preview}
-                  alt="Preview"
-                  style={{ width: "100px", borderRadius: "5px" }}
-                />
-              </div>
+              <img
+                src={preview}
+                alt="Preview"
+                style={{
+                  width: "100px",
+                  marginTop: "10px",
+                  borderRadius: "8px",
+                }}
+              />
             )}
           </div>
 
-          <button type="submit" className="btn btn-info w-100 fw-bold">
-            <i className="bi bi-box-seam me-2"></i> Save Product
+          <button
+            type="submit"
+            className="btn btn-info w-100 fw-bold"
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Save to Database"}
           </button>
         </form>
       </div>
 
-      {/* --- KOLOM KANAN: LIST PRODUK --- */}
+      {/* DAFTAR MENU DARI DATABASE */}
       <div className="right-column text-light">
-        <h2>Product List</h2>
-
-        {products.length === 0 ? (
-          <div className="alert alert-secondary bg-dark text-light border-secondary">
-            <i className="bi bi-info-circle me-2"></i> Belum ada produk.
-          </div>
-        ) : (
-          <table className="table table-dark table-hover border-secondary align-middle">
-            <thead>
-              <tr>
-                <th>Img</th>
-                <th>Name</th>
-                <th>Category</th> {/* Kolom Baru */}
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Action</th>
+        <h2>Menu List (Real DB)</h2>
+        <table className="table table-dark table-hover border-secondary">
+          <thead>
+            <tr>
+              <th>Img</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((item) => (
+              <tr key={item.item_id}>
+                <td>
+                  <img
+                    src={item.img_url}
+                    alt=""
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      objectFit: "cover",
+                      borderRadius: "5px",
+                    }}
+                  />
+                </td>
+                <td>{item.name}</td>
+                <td>
+                  <span className="badge bg-secondary text-info">
+                    {item.category_name}
+                  </span>
+                </td>
+                <td>Rp {item.price?.toLocaleString()}</td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleDelete(item.item_id)}
+                  >
+                    <i className="bi bi-trash"></i>
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {products.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    {item.imgUrl ? (
-                      <img
-                        src={item.imgUrl}
-                        alt={item.name}
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          objectFit: "cover",
-                          borderRadius: "5px",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        className="bg-secondary rounded"
-                        style={{ width: "40px", height: "40px" }}
-                      ></div>
-                    )}
-                  </td>
-                  <td className="fw-bold">{item.name}</td>
-                  <td>
-                    {/* Badge Kategori biar keren */}
-                    <span className="badge bg-secondary text-info border border-secondary">
-                      {item.categoryName}
-                    </span>
-                  </td>
-                  <td>Rp {parseInt(item.price).toLocaleString()}</td>
-                  <td>{item.stock}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
