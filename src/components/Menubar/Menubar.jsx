@@ -1,54 +1,57 @@
 import React from "react";
 import { assets } from "../../assets/assets";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Menubar = () => {
-  // --- FUNGSI BARU: TUTUP MENU SECARA MANUAL ---
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    toast.success("Logout Berhasil!");
+    navigate("/");
+  };
+
   const handleClose = () => {
-    // Kita cari tombol "X" (Close) yang ada di header menu
     const closeBtn = document.querySelector(".offcanvas-header .btn-close");
-    // Kalau ketemu, kita suruh dia "klik diri sendiri" biar menu tertutup
-    if (closeBtn) {
-      closeBtn.click();
-    }
+    if (closeBtn) closeBtn.click();
   };
 
   return (
     <nav className="navbar navbar-dark bg-dark shadow-sm py-3 sticky-top">
       <div className="container-fluid px-4 d-flex justify-content-between align-items-center">
-        {/* --- KIRI: TOGGLER + LOGO --- */}
+        {/* --- KIRI: TOGGLER + BRANDING --- */}
         <div className="d-flex align-items-center gap-3">
           <button
             className="navbar-toggler border-0 p-0 focus-ring focus-ring-dark"
             type="button"
             data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
-            style={{ display: "block" }}
           >
             <span className="navbar-toggler-icon"></span>
           </button>
 
-          <Link to="/" className="navbar-brand d-flex align-items-center me-0">
-            <img
-              src={assets.favicon}
-              alt="Ziro"
-              width="28"
-              height="28"
-              className="d-inline-block"
-            />
+          <Link
+            to="/dashboard"
+            className="navbar-brand d-flex align-items-center me-0"
+          >
+            <img src={assets.favicon} alt="Ziro" width="32" height="32" />
             <div
-              className="ms-2 d-flex flex-column"
-              style={{ lineHeight: "1" }}
+              className="ms-3 d-flex flex-column"
+              style={{ lineHeight: "1.1" }}
             >
-              <span className="fw-bold fs-3 text-white tracking-wide">
-                Ziro
-              </span>
               <span
-                className="text-secondary fw-medium"
-                style={{ fontSize: "10px", letterSpacing: "2px" }}
+                className="fw-bold fs-4 text-white"
+                style={{ letterSpacing: "1px" }}
               >
-                ADMIN
+                ZIRO<span style={{ color: "#0dcaf0" }}>SHOP</span>
+              </span>
+              {/* ADMIN DASHBOARD dibikin lebih terang (text-light) */}
+              <span
+                className="text-light opacity-75 fw-bold"
+                style={{ fontSize: "9px", letterSpacing: "3px" }}
+              >
+                ADMIN DASHBOARD
               </span>
             </div>
           </Link>
@@ -56,60 +59,58 @@ const Menubar = () => {
 
         {/* --- KANAN: LOGOUT --- */}
         <div>
-          <Link
-            to="/"
+          <button
+            onClick={handleLogout}
             className="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold"
           >
-            Logout
-          </Link>
+            LOGOUT
+          </button>
         </div>
 
         {/* --- SIDEBAR MENU --- */}
         <div
           className="offcanvas offcanvas-start text-bg-dark"
-          tabIndex="-1"
           id="offcanvasNavbar"
-          aria-labelledby="offcanvasNavbarLabel"
           style={{ maxWidth: "280px" }}
         >
-          {/* HEADER PROFIL */}
           <div className="offcanvas-header border-bottom border-secondary bg-black bg-opacity-25">
             <div className="d-flex align-items-center gap-3">
               <div
-                className="rounded-circle bg-info d-flex justify-content-center align-items-center fw-bold text-dark shadow"
-                style={{ width: "42px", height: "42px", fontSize: "18px" }}
+                className="rounded-circle bg-info d-flex justify-content-center align-items-center fw-bold text-dark"
+                style={{ width: "42px", height: "42px" }}
               >
-                A
+                Z
               </div>
               <div className="d-flex flex-column">
-                <h6 className="m-0 text-white fw-bold">Administrator</h6>
-                <small className="text-secondary" style={{ fontSize: "11px" }}>
-                  admin@ziro.com
+                <h6 className="m-0 text-white fw-bold">Ziro Admin</h6>
+                {/* Email dibikin text-light biar gak nyaru */}
+                <small
+                  className="text-light opacity-50"
+                  style={{ fontSize: "11px" }}
+                >
+                  admin@zirocraft.com
                 </small>
               </div>
             </div>
-
-            {/* Tombol Close Asli (Penting: Class 'btn-close' dipakai oleh handleClose) */}
             <button
               type="button"
               className="btn-close btn-close-white"
               data-bs-dismiss="offcanvas"
-              aria-label="Close"
             ></button>
           </div>
 
-          {/* LIST LINK MENU */}
           <div className="offcanvas-body">
-            <ul className="navbar-nav justify-content-start flex-grow-1 gap-3 pt-3">
+            <ul className="navbar-nav gap-2 pt-2">
+              {/* POLESAN: Link yang gak aktif pake text-light + opacity biar tetep kebaca tapi gak ganggu */}
               <li className="nav-item">
                 <NavLink
                   to="/dashboard"
+                  onClick={handleClose}
                   className={({ isActive }) =>
                     isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-secondary bg-opacity-10 rounded"
-                      : "nav-link px-3"
+                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                      : "nav-link px-3 text-light opacity-75"
                   }
-                  onClick={handleClose} // <--- GANTI data-bs-dismiss DENGAN INI
                 >
                   <i className="bi bi-speedometer2 me-2"></i> Dashboard
                 </NavLink>
@@ -118,36 +119,36 @@ const Menubar = () => {
               <li className="nav-item">
                 <NavLink
                   to="/explore"
+                  onClick={handleClose}
                   className={({ isActive }) =>
                     isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-secondary bg-opacity-10 rounded"
-                      : "nav-link px-3"
+                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                      : "nav-link px-3 text-light opacity-75"
                   }
-                  onClick={handleClose} // <--- GANTI INI
                 >
                   <i className="bi bi-cart4 me-2"></i> Kasir
                 </NavLink>
               </li>
 
               <li className="nav-item">
-                <hr className="text-secondary my-1 opacity-50" />
+                <hr className="border-secondary opacity-50 my-3" />
               </li>
               <div
-                className="text-secondary small fw-bold px-3 mt-2 mb-1"
-                style={{ fontSize: "11px", letterSpacing: "1px" }}
+                className="text-info small fw-bold px-3 mb-2"
+                style={{ fontSize: "10px", letterSpacing: "1px" }}
               >
-                DATA MASTER
+                MANAGEMENT
               </div>
 
               <li className="nav-item">
                 <NavLink
                   to="/category"
+                  onClick={handleClose}
                   className={({ isActive }) =>
                     isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-secondary bg-opacity-10 rounded"
-                      : "nav-link px-3"
+                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                      : "nav-link px-3 text-light opacity-75"
                   }
-                  onClick={handleClose} // <--- GANTI INI
                 >
                   <i className="bi bi-grid me-2"></i> Categories
                 </NavLink>
@@ -156,12 +157,12 @@ const Menubar = () => {
               <li className="nav-item">
                 <NavLink
                   to="/items"
+                  onClick={handleClose}
                   className={({ isActive }) =>
                     isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-secondary bg-opacity-10 rounded"
-                      : "nav-link px-3"
+                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                      : "nav-link px-3 text-light opacity-75"
                   }
-                  onClick={handleClose} // <--- GANTI INI
                 >
                   <i className="bi bi-box-seam me-2"></i> Products
                 </NavLink>
@@ -170,17 +171,27 @@ const Menubar = () => {
               <li className="nav-item">
                 <NavLink
                   to="/users"
+                  onClick={handleClose}
                   className={({ isActive }) =>
                     isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-secondary bg-opacity-10 rounded"
-                      : "nav-link px-3"
+                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                      : "nav-link px-3 text-light opacity-75"
                   }
-                  onClick={handleClose} // <--- GANTI INI
                 >
                   <i className="bi bi-people me-2"></i> Users
                 </NavLink>
               </li>
             </ul>
+          </div>
+
+          {/* WATERMARK: Dibikin lebih terang (text-secondary ganti text-light) */}
+          <div className="p-4 text-center border-top border-secondary">
+            <small
+              className="text-light opacity-25 fw-bold"
+              style={{ fontSize: "9px", letterSpacing: "2px" }}
+            >
+              ZIROCRAFT STUDIO © 2026
+            </small>
           </div>
         </div>
       </div>

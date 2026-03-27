@@ -1,118 +1,136 @@
-/* --- 1. LAYOUT UTAMA --- */
+/* --- 1. DASAR LAYOUT --- */
 .pos-container {
   width: 100%;
-  min-height: 90vh;
+  min-height: 94vh;
   background-color: #222;
   padding: 2rem;
   box-sizing: border-box;
-  overflow-x: hidden; /* Mencegah scroll samping (horizontal) */
 }
 
-/* --- 2. KOLOM KIRI: DAFTAR PRODUK --- */
+/* --- 2. GRID PRODUK --- */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
   gap: 20px;
 }
 
-/* KARTU PRODUK */
 .product-card {
-  background-color: #2c3034;
-  border: 1px solid #3a3f44;
+  background: #2c3034;
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.2s ease;
+  border: 1px solid #3a3f44;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .product-card:hover {
   transform: translateY(-5px);
   border-color: #0dcaf0;
-  box-shadow: 0 5px 15px rgba(13, 202, 240, 0.2);
+  box-shadow: 0 10px 20px rgba(13, 202, 240, 0.15);
 }
 
 .product-img-box {
   width: 100%;
-  height: 120px;
-  background-color: #3a3f44;
+  height: 125px;
+  background: #1a1d20;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6c757d;
-  font-size: 2rem;
+  overflow: hidden;
+  border-bottom: 1px solid #3a3f44;
 }
 
-.product-img {
+.product-img-box img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* --- 3. KOLOM KANAN: KERANJANG (CART) --- */
+.product-info {
+  padding: 12px;
+}
+
+.product-info h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-info .price {
+  font-size: 0.85rem;
+  color: #0dcaf0;
+  font-weight: 700;
+}
+
+/* --- 3. SIDEBAR ORDER DETAILS --- */
 .cart-sidebar {
   background-color: #2c3034;
   border: 1px solid #3a3f44;
-  border-radius: 12px;
-  height: calc(100vh - 100px);
-  position: sticky;
-  top: 20px;
+  border-radius: 15px;
+  height: calc(100vh - 140px);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Mencegah konten bocor keluar rounded corners */
+  overflow: hidden;
 }
 
-/* AREA CART ITEMS (Normal Mode) */
-.cart-items {
-  flex: 1;
-  overflow-y: auto; /* Scrollbar muncul normal jika ada isi */
-  padding: 15px;
-  scroll-behavior: smooth;
-  scrollbar-gutter: auto;
+.cart-items-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px 20px;
 }
 
-.cart-footer {
-  background-color: #222;
-  padding: 20px;
-  border-top: 1px solid #3a3f44;
-  border-radius: 0 0 12px 12px;
-}
-
-/* --- 4. SCROLLBAR KERANJANG (NORMAL STATE) --- */
-.cart-items::-webkit-scrollbar {
-  width: 6px;
-}
-.cart-items::-webkit-scrollbar-track {
+.cart-item-row {
   background: transparent;
+  border-bottom: 1px solid #3a3f44;
 }
-.cart-items::-webkit-scrollbar-thumb {
-  background-color: #495057;
+
+.cart-item-row:last-child {
+  border-bottom: none;
+}
+
+/* --- 4. FOOTER & CHECKOUT --- */
+.cart-footer {
+  padding: 20px;
+  background-color: #1a1d20;
+  border-top: 1px solid #3a3f44;
+}
+
+.total-price-text {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #0dcaf0;
+  text-shadow: 0 0 10px rgba(13, 202, 240, 0.2);
+}
+
+.btn-pay {
+  background-color: #0dcaf0;
+  color: #000;
+  font-weight: 800;
+  border: none;
+  padding: 14px;
   border-radius: 10px;
-}
-.cart-items::-webkit-scrollbar-thumb:hover {
-  background-color: #6c757d;
-}
-
-/* --- 5. CLASS "PEMBUNUH" SCROLLBAR (SAAT KOSONG) --- */
-/* Class ini dipanggil lewat React saat cart.length === 0 */
-.cart-hidden {
-  overflow-y: hidden !important; /* Matikan fungsi scroll */
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* Edge Lama */
-  padding-right: 0 !important;
+  width: 100%;
+  transition: 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Hapus fisik scrollbar dari layar Chrome/Safari */
-.cart-hidden::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  background: transparent !important;
+.btn-pay:hover:not(:disabled) {
+  background-color: #fff;
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
 }
 
-/* --- 6. RESPONSIVE --- */
-@media (max-width: 992px) {
-  .cart-sidebar {
-    height: auto;
-    position: static;
-    margin-top: 20px;
-  }
+/* --- 5. SEARCH BOX --- */
+.search-wrapper .form-control:focus {
+  border-color: #0dcaf0;
+  box-shadow: none;
 }
