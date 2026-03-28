@@ -85,7 +85,7 @@ const Menubar = () => {
           <div className="offcanvas-header border-bottom border-secondary bg-black bg-opacity-25">
             <div className="d-flex align-items-center gap-3">
               <div
-                className="rounded-circle bg-info d-flex justify-content-center align-items-center fw-bold text-dark"
+                className="rounded-circle bg-info d-flex justify-content-center align-items-center fw-bold text-dark shadow"
                 style={{ width: "42px", height: "42px" }}
               >
                 {userInitial}
@@ -109,8 +109,8 @@ const Menubar = () => {
             ></button>
           </div>
 
-          <div className="offcanvas-body">
-            <ul className="navbar-nav gap-2 pt-2">
+          <div className="offcanvas-body d-flex flex-column">
+            <ul className="navbar-nav gap-2 pt-2 flex-grow-1">
               <li className="nav-item">
                 <NavLink
                   to="/dashboard"
@@ -196,15 +196,51 @@ const Menubar = () => {
                 </>
               )}
             </ul>
-          </div>
 
-          <div className="p-4 text-center border-top border-secondary">
-            <small
-              className="text-light opacity-25 fw-bold"
-              style={{ fontSize: "9px", letterSpacing: "2px" }}
+            {/* --- WATERMARK: ZIRO_STUDIO PERMANENT SIGNATURE --- */}
+            <div
+              className="p-4 text-center border-top border-secondary mt-auto"
+              style={{ background: "rgba(0,0,0,0.1)" }}
             >
-              ZIROCRAFT STUDIO © 2026
-            </small>
+              <div className="d-flex flex-column align-items-center">
+                <div
+                  className="mb-1"
+                  style={{
+                    color: "#0dcaf0",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  &lt; <span style={{ color: "#fff" }}>Z</span> &gt;
+                </div>
+                <span
+                  className="fw-bold text-white"
+                  style={{
+                    fontSize: "11px",
+                    letterSpacing: "2px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ziro<span style={{ color: "#0dcaf0" }}>craft</span> studio
+                </span>
+                <small
+                  className="text-light opacity-25 mt-1"
+                  style={{ fontSize: "9px", fontWeight: "600" }}
+                >
+                  zirocraftid@gmail.com
+                </small>
+                <div
+                  className="mt-2"
+                  style={{
+                    fontSize: "8px",
+                    color: "#444",
+                    letterSpacing: "1px",
+                  }}
+                >
+                  © 2026 OFFICIAL BUILD
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
