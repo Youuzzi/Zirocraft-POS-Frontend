@@ -1,21 +1,19 @@
-import axios from "axios";
+import api from "./api"; // PAKAI INI, JANGAN AXIOS LANGSUNG
 
-// 1. Tambah kategori (Butuh /admin)
-export const addCategory = async (category) => {
-  return await axios.post(
-    "http://localhost:8080/api/v1.0/admin/categories",
-    category,
-  );
-};
-
-// 2. Hapus kategori (Butuh /admin)
-export const deleteCategory = async (categoryId) => {
-  return await axios.delete(
-    `http://localhost:8080/api/v1.0/admin/categories/${categoryId}`,
-  );
-};
-
-// 3. Ambil/Lihat kategori (Bebas, gak perlu admin)
+// Ambil semua kategori
 export const fetchCategories = async () => {
-  return await axios.get("http://localhost:8080/api/v1.0/categories");
+  // Pake api.get supaya interceptor nempel header Authorization
+  return await api.get("/categories");
+};
+
+// Tambah kategori (Butuh Admin)
+export const addCategory = async (formData) => {
+  return await api.post("/admin/categories", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
+// Hapus kategori (Butuh Admin)
+export const deleteCategory = async (id) => {
+  return await api.delete(`/admin/categories/${id}`);
 };
