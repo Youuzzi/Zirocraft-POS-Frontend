@@ -8,23 +8,26 @@ export const AppContextProvider = (props) => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token"));
-
-  // STATE NAMA REAKTIF: Ambil dari localStorage buat awal saja
   const [userName, setUserName] = useState(
     localStorage.getItem("name") || "Administrator",
   );
 
   const loadData = async () => {
     if (!token || token === "[object Object]" || token === "undefined") return;
+
     try {
+      console.log("AppContext: Menarik data terbaru...");
       const [resCat, resItems] = await Promise.all([
         fetchCategories(),
         fetchItems(),
       ]);
+
       if (resCat.data) setCategories(resCat.data);
       if (resItems.data) setProducts(resItems.data);
+
+      console.log("AppContext: Sinkronisasi Berhasil!");
     } catch (err) {
-      console.error("AppContext: Gagal load data awal.", err);
+      console.error("AppContext: Gagal sinkronisasi.", err);
     }
   };
 
@@ -32,13 +35,16 @@ export const AppContextProvider = (props) => {
     loadData();
   }, [token]);
 
+  // --- KUNCI PERBAIKAN: Masukkan setCategories & setProducts ke sini ---
   const contextValue = {
     categories,
+    setCategories, // <-- Tambahkan ini
     products,
+    setProducts, // <-- Tambahkan ini
     token,
     setToken,
-    userName, // Sebarkan nama ke seluruh komponen
-    setUserName, // Sebarkan fungsi update nama
+    userName,
+    setUserName,
     loadData,
   };
 

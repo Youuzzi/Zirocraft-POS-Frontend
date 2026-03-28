@@ -1,8 +1,8 @@
 import api from "./api";
 
 export const fetchItems = async () => {
-  // Pake api instance
-  return await api.get("/admin/items");
+  // Ganti dari /admin/items ke /items
+  return await api.get("/items");
 };
 
 export const addItem = async (formData) => {

@@ -6,16 +6,16 @@ import toast from "react-hot-toast";
 
 const Menubar = () => {
   const navigate = useNavigate();
-  const { setToken, setUserName, userName } = useContext(AppContext); // Ambil userName & setUserName
+  const { setToken, setUserName, userName } = useContext(AppContext);
 
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("email") || "user@ziro.com";
-  const userInitial = userName.charAt(0).toUpperCase(); // Ambil initial dari userName reaktif
+  const userInitial = userName ? userName.charAt(0).toUpperCase() : "Z";
 
   const handleLogout = () => {
     localStorage.clear();
     setToken(null);
-    setUserName("Administrator"); // Reset nama ke default saat logout
+    setUserName("Administrator");
     toast.success("Logout Berhasil!");
     navigate("/login");
   };
@@ -130,6 +130,8 @@ const Menubar = () => {
                   <i className="bi bi-cart4 me-2"></i> Kasir
                 </NavLink>
               </li>
+
+              {/* LOGIKA: Hanya tampilkan Management jika login sebagai ADMIN */}
               {role === "ROLE_ADMIN" && (
                 <>
                   <li className="nav-item">
@@ -141,6 +143,7 @@ const Menubar = () => {
                   >
                     MANAGEMENT
                   </div>
+
                   <li className="nav-item">
                     <NavLink
                       to="/category"
@@ -154,6 +157,7 @@ const Menubar = () => {
                       <i className="bi bi-grid me-2"></i> Categories
                     </NavLink>
                   </li>
+
                   <li className="nav-item">
                     <NavLink
                       to="/items"
@@ -167,6 +171,7 @@ const Menubar = () => {
                       <i className="bi bi-box-seam me-2"></i> Products
                     </NavLink>
                   </li>
+
                   <li className="nav-item">
                     <NavLink
                       to="/users"
@@ -178,6 +183,21 @@ const Menubar = () => {
                       }
                     >
                       <i className="bi bi-people me-2"></i> Users
+                    </NavLink>
+                  </li>
+
+                  {/* --- MENU BARU: SETTINGS (ADMIN ONLY) --- */}
+                  <li className="nav-item">
+                    <NavLink
+                      to="/settings"
+                      onClick={handleClose}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                          : "nav-link px-3 text-light opacity-75"
+                      }
+                    >
+                      <i className="bi bi-gear me-2"></i> Store Settings
                     </NavLink>
                   </li>
                 </>

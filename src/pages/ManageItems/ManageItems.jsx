@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-// 1. Tambahkan import toast di sini
+import React, { useState, useEffect, useContext } from "react";
+import { AppContext } from "../../context/AppContext";
+import { fetchItems, addItem, deleteItem } from "../../Service/ItemService";
+import { fetchCategories } from "../../Service/CategoryService";
 import toast from "react-hot-toast";
 import "../ManageCategory/ManageCategory.css";
 
 const ManageItems = () => {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
+  // Ambil data dan fungsi pengubahnya dari context
+  const { products, setProducts, categories, setCategories } =
+    useContext(AppContext);
 
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -16,21 +18,23 @@ const ManageItems = () => {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8080/api/v1.0"; // Sudah disesuaikan ke v1.0
-
   useEffect(() => {
-    fetchInitialData();
+    loadInitialData();
   }, []);
 
-  const fetchInitialData = async () => {
+  const loadInitialData = async () => {
     try {
-      const resCat = await axios.get(`${API_BASE_URL}/categories`);
-      const resItems = await axios.get(`${API_BASE_URL}/items`);
+      const [resCat, resItems] = await Promise.all([
+        fetchCategories(),
+        fetchItems(),
+      ]);
 
-      setCategories(resCat.data);
-      setProducts(resItems.data);
+      // Sekarang setCategories dan setProducts sudah jadi fungsi yang valid
+      if (resCat.data) setCategories(resCat.data);
+      if (resItems.data) setProducts(resItems.data);
     } catch (err) {
-      console.error("Gagal mengambil data dari DB:", err);
+      console.error("ManageItems: Gagal fetch data.", err);
+      toast.error("Gagal memuat data produk.");
     }
   };
 
@@ -45,8 +49,7 @@ const ManageItems = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!name || !categoryId || !price || !image) {
-      // 2. Ganti alert jadi toast.error
-      toast.error("Lengkapi semua data dulu, Zi! ❌");
+      toast.error("Lengkapi semua data, Zi! ❌");
       return;
     }
 
@@ -58,24 +61,21 @@ const ManageItems = () => {
       JSON.stringify({
         name: name,
         price: price,
-        categoryID: categoryId,
+        categoryId: categoryId,
         description: description,
       }),
     );
 
     try {
-      await axios.post(`${API_BASE_URL}/admin/items`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      // 3. Ganti alert jadi toast.success
-      toast.success("Menu Makanan Berhasil Disimpan! 🚀");
-      fetchInitialData();
-      resetForm();
+      const response = await addItem(formData);
+      if (response.status === 201 || response.status === 200) {
+        toast.success("Menu Berhasil Disimpan! 🚀");
+        loadInitialData(); // Refresh list
+        resetForm();
+      }
     } catch (err) {
-      console.error("Gagal simpan produk:", err);
-      // 4. Ganti alert jadi toast.error
-      toast.error("Gagal simpan! Cek koneksi Backend kamu.");
+      console.error("ManageItems: Simpan gagal.", err);
+      toast.error("Gagal menyimpan produk.");
     } finally {
       setLoading(false);
     }
@@ -88,16 +88,17 @@ const ManageItems = () => {
     setDescription("");
     setImage(null);
     setPreview(null);
+    if (document.getElementById("itemImage"))
+      document.getElementById("itemImage").value = "";
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Hapus menu ini dari database?")) {
+    if (window.confirm("Hapus menu ini secara permanen?")) {
       try {
-        await axios.delete(`${API_BASE_URL}/admin/items/${id}`);
+        await deleteItem(id);
         toast.success("Menu berhasil dihapus!");
-        fetchInitialData();
+        loadInitialData();
       } catch (err) {
-        console.error("Gagal hapus:", err);
         toast.error("Gagal menghapus menu.");
       }
     }
@@ -105,53 +106,54 @@ const ManageItems = () => {
 
   return (
     <div className="category-container">
+      {/* FORM INPUT */}
       <div className="left-column text-light">
-        <h2>{loading ? "Saving..." : "Add New Menu"}</h2>
+        <h2 className="ziro-title">
+          {loading ? "Processing..." : "Add New Menu"}
+        </h2>
         <form onSubmit={handleSave}>
           <div className="mb-3">
-            <label className="form-label">Menu Name</label>
+            <label className="form-label small fw-bold">NAMA MENU</label>
             <input
               type="text"
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
-
           <div className="mb-3">
-            <label className="form-label">Category</label>
+            <label className="form-label small fw-bold">KATEGORI</label>
             <select
-              className="form-select bg-dark text-light border-secondary"
+              className="form-select bg-dark text-white border-secondary"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               required
             >
-              <option value="">-- Select Category --</option>
+              <option value="">-- Pilih Kategori --</option>
               {categories.map((cat) => (
-                <option key={cat.category_id} value={cat.category_id}>
+                <option key={cat.categoryId} value={cat.categoryId}>
                   {cat.name}
                 </option>
               ))}
             </select>
           </div>
-
           <div className="mb-3">
-            <label className="form-label">Price (Rp)</label>
+            <label className="form-label small fw-bold">HARGA (Rp)</label>
             <input
               type="number"
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               required
             />
           </div>
-
           <div className="mb-3">
-            <label className="form-label">Photo</label>
+            <label className="form-label small fw-bold">FOTO PRODUK</label>
             <input
+              id="itemImage"
               type="file"
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               onChange={handleImageChange}
               required
             />
@@ -159,71 +161,80 @@ const ManageItems = () => {
               <img
                 src={preview}
                 alt="Preview"
-                style={{
-                  width: "100px",
-                  marginTop: "10px",
-                  borderRadius: "8px",
-                }}
+                className="mt-2 rounded"
+                style={{ width: "100px", border: "2px solid #0dcaf0" }}
               />
             )}
           </div>
-
           <button
             type="submit"
-            className="btn btn-info w-100 fw-bold"
+            className="btn btn-info w-100 fw-bold py-3 mt-2"
             disabled={loading}
           >
-            {loading ? "Processing..." : "Save to Database"}
+            SAVE TO DATABASE
           </button>
         </form>
       </div>
 
+      {/* TABLE LIST */}
       <div className="right-column text-light">
-        <h2>Menu List (Real DB)</h2>
-        <table className="table table-dark table-hover border-secondary">
-          <thead>
-            <tr>
-              <th>Img</th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((item) => (
-              <tr key={item.item_id}>
-                <td>
-                  <img
-                    src={item.img_url}
-                    alt=""
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      objectFit: "cover",
-                      borderRadius: "5px",
-                    }}
-                  />
-                </td>
-                <td>{item.name}</td>
-                <td>
-                  <span className="badge bg-secondary text-info">
-                    {item.category_name}
-                  </span>
-                </td>
-                <td>Rp {item.price?.toLocaleString()}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(item.item_id)}
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
-                </td>
+        <h2 className="ziro-title">Menu List (Real DB)</h2>
+        <div className="table-responsive">
+          <table className="table table-dark table-hover border-secondary align-middle">
+            <thead>
+              <tr>
+                <th>IMG</th>
+                <th>NAME</th>
+                <th>CATEGORY</th>
+                <th>PRICE</th>
+                <th className="text-center">ACTION</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-secondary">
+                    Belum ada menu di database.
+                  </td>
+                </tr>
+              ) : (
+                products.map((item) => (
+                  <tr key={item.itemId}>
+                    <td>
+                      <img
+                        src={item.imgUrl}
+                        alt=""
+                        className="rounded"
+                        style={{
+                          width: "45px",
+                          height: "45px",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </td>
+                    <td className="fw-bold">{item.name}</td>
+                    <td>
+                      <span className="badge bg-secondary text-info">
+                        {item.categoryName}
+                      </span>
+                    </td>
+                    <td className="text-info fw-bold">
+                      Rp {parseInt(item.price).toLocaleString()}
+                    </td>
+                    <td className="text-center">
+                      <button
+                        className="btn btn-sm btn-outline-danger border-0"
+                        onClick={() => handleDelete(item.itemId)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
