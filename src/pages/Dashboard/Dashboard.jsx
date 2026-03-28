@@ -1,26 +1,55 @@
-import React from "react";
-import "./Dashboard.css"; // Import CSS yang baru dibuat
+import React, { useContext } from "react";
+import { AppContext } from "../../context/AppContext";
+import "./Dashboard.css";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
+  // 1. Ambil userName reaktif dari Context
+  const { userName } = useContext(AppContext);
+
+  // 2. Format Tanggal yang lebih Cantik & Pro (Contoh: Sabtu, 28 Maret 2026)
+  const today = new Date();
+  const dateOptions = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  const formattedDate = today.toLocaleDateString("id-ID", dateOptions);
+
   return (
     <div className="dashboard-container text-light">
-      {/* --- HEADER --- */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      {/* --- HEADER SECTION --- */}
+      <div className="d-flex justify-content-between align-items-start mb-5">
         <div>
-          <h2 className="fw-bold m-0">Dashboard</h2>
-          <p className="text-secondary m-0 small">
-            Welcome back, Administrator!
+          <h2 className="fw-bold m-0 ziro-title">Dashboard</h2>
+          {/* Greeting: Tanda seru dihapus & warna dibuat lebih soft agar tidak kontras tajam */}
+          <p
+            className="text-secondary m-0 mt-2"
+            style={{ fontSize: "15px", letterSpacing: "0.5px" }}
+          >
+            Selamat datang kembali,{" "}
+            <span className="text-info fw-semibold">{userName}</span>
           </p>
         </div>
+
+        {/* Tanggal: Warna lebih ramah mata (Soft Border, Semi-Transparent) */}
         <div className="text-end">
-          <span className="badge bg-secondary px-3 py-2">
-            {new Date().toLocaleDateString()}
-          </span>
+          <div
+            className="d-flex align-items-center gap-2 px-3 py-2 rounded-3 border border-secondary border-opacity-25"
+            style={{
+              background: "rgba(255, 255, 255, 0.03)",
+              fontSize: "13px",
+              color: "#aaa",
+            }}
+          >
+            <i className="bi bi-calendar3 text-info"></i>
+            <span className="fw-medium">{formattedDate}</span>
+          </div>
         </div>
       </div>
 
-      {/* --- 1. BARIS KARTU STATISTIK (STATS CARDS) --- */}
+      {/* --- 1. BARIS KARTU STATISTIK --- */}
       <div className="row g-4 mb-5">
         {/* Card 1: Total Sales */}
         <div className="col-12 col-md-6 col-lg-3">
@@ -55,8 +84,6 @@ const Dashboard = () => {
         {/* Card 3: Total Products */}
         <div className="col-12 col-md-6 col-lg-3">
           <Link to="/items" className="text-decoration-none">
-            {" "}
-            {/* Bisa diklik ke Produk */}
             <div className="stat-card border-left-warning">
               <div>
                 <p className="text-secondary mb-1 small fw-bold text-uppercase">
@@ -89,67 +116,33 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* --- 2. TABEL AKTIVITAS TERBARU (DUMMY) --- */}
+      {/* --- 2. TABEL AKTIVITAS TERBARU --- */}
       <h4 className="section-title">Recent Transactions</h4>
-
-      <div className="table-responsive bg-dark p-3 rounded border border-secondary shadow-sm">
+      <div className="table-responsive bg-dark p-3 rounded-4 border border-secondary border-opacity-25 shadow-sm">
         <table className="table table-dark table-hover align-middle mb-0">
           <thead>
             <tr className="text-secondary small text-uppercase">
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th className="py-3 px-4">Order ID</th>
+              <th className="py-3">Customer</th>
+              <th className="py-3">Date</th>
+              <th className="py-3">Total</th>
+              <th className="py-3">Status</th>
+              <th className="py-3 text-center">Action</th>
             </tr>
           </thead>
-          <tbody>
-            {/* Data Palsu biar kelihatan ramai */}
+          <tbody className="border-top-0">
             <tr>
-              <td>#ORD-001</td>
+              <td className="px-4 text-info fw-medium">#ORD-001</td>
               <td>Walk-in Customer</td>
-              <td>Today, 10:45</td>
-              <td>Rp 45.000</td>
+              <td className="text-secondary small">Today, 10:45</td>
+              <td className="fw-bold text-light">Rp 45.000</td>
               <td>
-                <span className="badge bg-success bg-opacity-25 text-success">
+                <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
                   Completed
                 </span>
               </td>
-              <td>
-                <button className="btn btn-sm btn-outline-secondary">
-                  <i className="bi bi-eye"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>#ORD-002</td>
-              <td>Meja No. 4</td>
-              <td>Today, 11:20</td>
-              <td>Rp 120.000</td>
-              <td>
-                <span className="badge bg-warning bg-opacity-25 text-warning">
-                  Pending
-                </span>
-              </td>
-              <td>
-                <button className="btn btn-sm btn-outline-secondary">
-                  <i className="bi bi-eye"></i>
-                </button>
-              </td>
-            </tr>
-            <tr>
-              <td>#ORD-003</td>
-              <td>Gojek Driver</td>
-              <td>Yesterday</td>
-              <td>Rp 75.000</td>
-              <td>
-                <span className="badge bg-success bg-opacity-25 text-success">
-                  Completed
-                </span>
-              </td>
-              <td>
-                <button className="btn btn-sm btn-outline-secondary">
+              <td className="text-center">
+                <button className="btn btn-sm btn-outline-secondary border-0">
                   <i className="bi bi-eye"></i>
                 </button>
               </td>

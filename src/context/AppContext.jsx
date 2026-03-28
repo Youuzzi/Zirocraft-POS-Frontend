@@ -1,34 +1,30 @@
 import { createContext, useEffect, useState } from "react";
 import { fetchCategories } from "../Service/CategoryService";
-import { fetchItems } from "../Service/ItemService"; // Tambahan baru
+import { fetchItems } from "../Service/ItemService";
 
 export const AppContext = createContext(null);
 
 export const AppContextProvider = (props) => {
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]); // State untuk Barang
+  const [products, setProducts] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token"));
 
+  // STATE NAMA REAKTIF: Ambil dari localStorage buat awal saja
+  const [userName, setUserName] = useState(
+    localStorage.getItem("name") || "Administrator",
+  );
+
   const loadData = async () => {
-    // Pengaman Token
     if (!token || token === "[object Object]" || token === "undefined") return;
-
     try {
-      console.log("AppContext: Sinkronisasi data...");
-
-      // Ambil Kategori dan Item secara paralel (barengan)
       const [resCat, resItems] = await Promise.all([
         fetchCategories(),
         fetchItems(),
       ]);
-
       if (resCat.data) setCategories(resCat.data);
-      if (resItems.data) {
-        setProducts(resItems.data);
-        console.log("AppContext: Data barang berhasil dimuat!", resItems.data);
-      }
+      if (resItems.data) setProducts(resItems.data);
     } catch (err) {
-      console.error("AppContext: Gagal sinkronisasi data.", err);
+      console.error("AppContext: Gagal load data awal.", err);
     }
   };
 
@@ -38,11 +34,11 @@ export const AppContextProvider = (props) => {
 
   const contextValue = {
     categories,
-    setCategories,
     products,
-    setProducts,
     token,
     setToken,
+    userName, // Sebarkan nama ke seluruh komponen
+    setUserName, // Sebarkan fungsi update nama
     loadData,
   };
 

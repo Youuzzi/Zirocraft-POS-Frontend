@@ -1,24 +1,23 @@
 import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { AppContext } from "../../context/AppContext"; // Import Context buat matiin token
+import { AppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 
 const Menubar = () => {
   const navigate = useNavigate();
-  const { setToken } = useContext(AppContext);
+  const { setToken, setUserName, userName } = useContext(AppContext); // Ambil userName & setUserName
 
-  // 1. Ambil Data User dari LocalStorage
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("email") || "user@ziro.com";
-  const userInitial = userEmail.charAt(0).toUpperCase();
+  const userInitial = userName.charAt(0).toUpperCase(); // Ambil initial dari userName reaktif
 
-  // 2. FUNGSI LOGOUT (Bersihin semua jejak)
   const handleLogout = () => {
-    localStorage.clear(); // Hapus token, role, dan email
-    setToken(null); // Reset state global biar App.jsx tau kita udah keluar
+    localStorage.clear();
+    setToken(null);
+    setUserName("Administrator"); // Reset nama ke default saat logout
     toast.success("Logout Berhasil!");
-    navigate("/login"); // Lempar ke halaman login
+    navigate("/login");
   };
 
   const handleClose = () => {
@@ -29,7 +28,7 @@ const Menubar = () => {
   return (
     <nav className="navbar navbar-dark bg-dark shadow-sm py-3 sticky-top">
       <div className="container-fluid px-4 d-flex justify-content-between align-items-center">
-        {/* --- KIRI: TOGGLER + BRANDING --- */}
+        {/* --- KIRI: BRANDING --- */}
         <div className="d-flex align-items-center gap-3">
           <button
             className="navbar-toggler border-0 p-0 focus-ring focus-ring-dark"
@@ -39,7 +38,6 @@ const Menubar = () => {
           >
             <span className="navbar-toggler-icon"></span>
           </button>
-
           <Link
             to="/dashboard"
             className="navbar-brand d-flex align-items-center me-0"
@@ -55,7 +53,6 @@ const Menubar = () => {
               >
                 ZIRO<span style={{ color: "#0dcaf0" }}>SHOP</span>
               </span>
-              {/* LOGIKA: Ganti teks berdasarkan Role */}
               <span
                 className="text-light opacity-75 fw-bold"
                 style={{ fontSize: "9px", letterSpacing: "3px" }}
@@ -67,14 +64,12 @@ const Menubar = () => {
         </div>
 
         {/* --- KANAN: LOGOUT --- */}
-        <div>
-          <button
-            onClick={handleLogout}
-            className="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold"
-          >
-            LOGOUT
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold"
+        >
+          LOGOUT
+        </button>
 
         {/* --- SIDEBAR MENU --- */}
         <div
@@ -91,9 +86,7 @@ const Menubar = () => {
                 {userInitial}
               </div>
               <div className="d-flex flex-column">
-                <h6 className="m-0 text-white fw-bold">
-                  {role === "ROLE_ADMIN" ? "Administrator" : "Cashier"}
-                </h6>
+                <h6 className="m-0 text-white fw-bold">{userName}</h6>
                 <small
                   className="text-light opacity-50"
                   style={{ fontSize: "11px" }}
@@ -124,7 +117,6 @@ const Menubar = () => {
                   <i className="bi bi-speedometer2 me-2"></i> Dashboard
                 </NavLink>
               </li>
-
               <li className="nav-item">
                 <NavLink
                   to="/explore"
@@ -138,8 +130,6 @@ const Menubar = () => {
                   <i className="bi bi-cart4 me-2"></i> Kasir
                 </NavLink>
               </li>
-
-              {/* LOGIKA: Hanya tampilkan Management jika login sebagai ADMIN */}
               {role === "ROLE_ADMIN" && (
                 <>
                   <li className="nav-item">
@@ -151,7 +141,6 @@ const Menubar = () => {
                   >
                     MANAGEMENT
                   </div>
-
                   <li className="nav-item">
                     <NavLink
                       to="/category"
@@ -165,7 +154,6 @@ const Menubar = () => {
                       <i className="bi bi-grid me-2"></i> Categories
                     </NavLink>
                   </li>
-
                   <li className="nav-item">
                     <NavLink
                       to="/items"
@@ -179,7 +167,6 @@ const Menubar = () => {
                       <i className="bi bi-box-seam me-2"></i> Products
                     </NavLink>
                   </li>
-
                   <li className="nav-item">
                     <NavLink
                       to="/users"
@@ -197,7 +184,7 @@ const Menubar = () => {
               )}
             </ul>
 
-            {/* --- WATERMARK: ZIRO_STUDIO PERMANENT SIGNATURE --- */}
+            {/* --- WATERMARK SIGNATURE --- */}
             <div
               className="p-4 text-center border-top border-secondary mt-auto"
               style={{ background: "rgba(0,0,0,0.1)" }}
@@ -225,20 +212,10 @@ const Menubar = () => {
                 </span>
                 <small
                   className="text-light opacity-25 mt-1"
-                  style={{ fontSize: "9px", fontWeight: "600" }}
+                  style={{ fontSize: "9px" }}
                 >
                   zirocraftid@gmail.com
                 </small>
-                <div
-                  className="mt-2"
-                  style={{
-                    fontSize: "8px",
-                    color: "#444",
-                    letterSpacing: "1px",
-                  }}
-                >
-                  © 2026 OFFICIAL BUILD
-                </div>
               </div>
             </div>
           </div>

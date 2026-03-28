@@ -11,7 +11,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { setToken } = useContext(AppContext);
+  const { setToken, setUserName } = useContext(AppContext); // Ambil setUserName
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -19,10 +19,12 @@ const Login = () => {
     setLoading(true);
     try {
       const data = await login(email, password);
-      if (data.token) {
-        // Update token di AppContext biar data langsung ditarik
+      if (data && data.token) {
+        // UPDATE GLOBAL STATE (Inilah kuncinya!)
         setToken(data.token);
-        toast.success("Login Berhasil! Selamat datang Zi.");
+        setUserName(data.name);
+
+        toast.success(`Login Berhasil! Selamat datang, ${data.name}.`);
         navigate("/dashboard");
       }
     } catch (error) {
@@ -55,7 +57,6 @@ const Login = () => {
               required
             />
           </div>
-
           <div className="form-group">
             <label>Password</label>
             <input
@@ -67,12 +68,10 @@ const Login = () => {
               required
             />
           </div>
-
           <button type="submit" className="btn-login" disabled={loading}>
             {loading ? "MENGHUBUNGKAN..." : "MASUK KE DASHBOARD"}
           </button>
         </form>
-
         <div className="login-footer">
           <p>BY ZIROCRAFT STUDIO</p>
         </div>
