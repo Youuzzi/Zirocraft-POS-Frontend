@@ -8,16 +8,18 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
 
-    // Jika token valid, tempelkan ke header
-    if (token && token !== "[object Object]" && token !== "undefined") {
+    // JANGAN kirim header Authorization kalau URL-nya mengandung 'login'
+    if (
+      token &&
+      !config.url.includes("/login") &&
+      token !== "[object Object]"
+    ) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 export default api;
