@@ -1,15 +1,24 @@
-import React from "react";
+import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { AppContext } from "../../context/AppContext"; // Import Context buat matiin token
 import toast from "react-hot-toast";
 
 const Menubar = () => {
   const navigate = useNavigate();
+  const { setToken } = useContext(AppContext);
 
+  // 1. Ambil Data User dari LocalStorage
+  const role = localStorage.getItem("role");
+  const userEmail = localStorage.getItem("email") || "user@ziro.com";
+  const userInitial = userEmail.charAt(0).toUpperCase();
+
+  // 2. FUNGSI LOGOUT (Bersihin semua jejak)
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.clear(); // Hapus token, role, dan email
+    setToken(null); // Reset state global biar App.jsx tau kita udah keluar
     toast.success("Logout Berhasil!");
-    navigate("/");
+    navigate("/login"); // Lempar ke halaman login
   };
 
   const handleClose = () => {
@@ -46,12 +55,12 @@ const Menubar = () => {
               >
                 ZIRO<span style={{ color: "#0dcaf0" }}>SHOP</span>
               </span>
-              {/* ADMIN DASHBOARD dibikin lebih terang (text-light) */}
+              {/* LOGIKA: Ganti teks berdasarkan Role */}
               <span
                 className="text-light opacity-75 fw-bold"
                 style={{ fontSize: "9px", letterSpacing: "3px" }}
               >
-                ADMIN DASHBOARD
+                {role === "ROLE_ADMIN" ? "ADMIN DASHBOARD" : "CASHIER SYSTEM"}
               </span>
             </div>
           </Link>
@@ -79,16 +88,17 @@ const Menubar = () => {
                 className="rounded-circle bg-info d-flex justify-content-center align-items-center fw-bold text-dark"
                 style={{ width: "42px", height: "42px" }}
               >
-                Z
+                {userInitial}
               </div>
               <div className="d-flex flex-column">
-                <h6 className="m-0 text-white fw-bold">Ziro Admin</h6>
-                {/* Email dibikin text-light biar gak nyaru */}
+                <h6 className="m-0 text-white fw-bold">
+                  {role === "ROLE_ADMIN" ? "Administrator" : "Cashier"}
+                </h6>
                 <small
                   className="text-light opacity-50"
                   style={{ fontSize: "11px" }}
                 >
-                  admin@zirocraft.com
+                  {userEmail}
                 </small>
               </div>
             </div>
@@ -101,7 +111,6 @@ const Menubar = () => {
 
           <div className="offcanvas-body">
             <ul className="navbar-nav gap-2 pt-2">
-              {/* POLESAN: Link yang gak aktif pake text-light + opacity biar tetep kebaca tapi gak ganggu */}
               <li className="nav-item">
                 <NavLink
                   to="/dashboard"
@@ -130,61 +139,65 @@ const Menubar = () => {
                 </NavLink>
               </li>
 
-              <li className="nav-item">
-                <hr className="border-secondary opacity-50 my-3" />
-              </li>
-              <div
-                className="text-info small fw-bold px-3 mb-2"
-                style={{ fontSize: "10px", letterSpacing: "1px" }}
-              >
-                MANAGEMENT
-              </div>
+              {/* LOGIKA: Hanya tampilkan Management jika login sebagai ADMIN */}
+              {role === "ROLE_ADMIN" && (
+                <>
+                  <li className="nav-item">
+                    <hr className="border-secondary opacity-50 my-3" />
+                  </li>
+                  <div
+                    className="text-info small fw-bold px-3 mb-2"
+                    style={{ fontSize: "10px", letterSpacing: "1px" }}
+                  >
+                    MANAGEMENT
+                  </div>
 
-              <li className="nav-item">
-                <NavLink
-                  to="/category"
-                  onClick={handleClose}
-                  className={({ isActive }) =>
-                    isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
-                      : "nav-link px-3 text-light opacity-75"
-                  }
-                >
-                  <i className="bi bi-grid me-2"></i> Categories
-                </NavLink>
-              </li>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/category"
+                      onClick={handleClose}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                          : "nav-link px-3 text-light opacity-75"
+                      }
+                    >
+                      <i className="bi bi-grid me-2"></i> Categories
+                    </NavLink>
+                  </li>
 
-              <li className="nav-item">
-                <NavLink
-                  to="/items"
-                  onClick={handleClose}
-                  className={({ isActive }) =>
-                    isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
-                      : "nav-link px-3 text-light opacity-75"
-                  }
-                >
-                  <i className="bi bi-box-seam me-2"></i> Products
-                </NavLink>
-              </li>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/items"
+                      onClick={handleClose}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                          : "nav-link px-3 text-light opacity-75"
+                      }
+                    >
+                      <i className="bi bi-box-seam me-2"></i> Products
+                    </NavLink>
+                  </li>
 
-              <li className="nav-item">
-                <NavLink
-                  to="/users"
-                  onClick={handleClose}
-                  className={({ isActive }) =>
-                    isActive
-                      ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
-                      : "nav-link px-3 text-light opacity-75"
-                  }
-                >
-                  <i className="bi bi-people me-2"></i> Users
-                </NavLink>
-              </li>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/users"
+                      onClick={handleClose}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "nav-link active fw-bold text-info px-3 bg-info bg-opacity-10 rounded"
+                          : "nav-link px-3 text-light opacity-75"
+                      }
+                    >
+                      <i className="bi bi-people me-2"></i> Users
+                    </NavLink>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 
-          {/* WATERMARK: Dibikin lebih terang (text-secondary ganti text-light) */}
           <div className="p-4 text-center border-top border-secondary">
             <small
               className="text-light opacity-25 fw-bold"
