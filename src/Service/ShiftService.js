@@ -5,6 +5,11 @@ export const getActiveShift = async (userId) => {
 };
 
 export const openShift = async (data) => {
-  // data: { userId, openingBalance }
   return await api.post("/shifts/open", data);
+};
+
+// Pipa untuk tutup shift
+export const closeShift = async (data) => {
+  // data: { shiftId, actualBalance }
+  return await api.post("/shifts/close", data);
 };

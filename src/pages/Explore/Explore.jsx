@@ -2,21 +2,23 @@ import React, { useState, useContext } from "react";
 import "./Explore.css";
 import { AppContext } from "../../context/AppContext";
 import CategoryList from "../../CategoryList/CategoryList";
-import { openShift } from "../../Service/ShiftService"; // Import Pipa Shift
+import { openShift, closeShift } from "../../Service/ShiftService";
 import toast from "react-hot-toast";
 
 const Explore = () => {
   const { products, activeShift, setActiveShift, settings, userName } =
     useContext(AppContext);
+
+  // --- STATE LOKAL ---
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-
-  // State untuk Modal Buka Shift
   const [openingBalance, setOpeningBalance] = useState("");
   const [loadingShift, setLoadingShift] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [actualCash, setActualCash] = useState("");
 
-  // --- LOGIC KASIR (TETAP SAMA) ---
+  // --- LOGIC KASIR ---
   const addToCart = (product) => {
     const existingItem = cart.find((item) => item.itemId === product.itemId);
     if (existingItem) {
@@ -57,29 +59,58 @@ const Explore = () => {
 
   const totalPrice = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  // --- LOGIC: FUNGSI BUKA SHIFT ---
+  // --- LOGIC SHIFT ---
   const handleStartShift = async (e) => {
     e.preventDefault();
-    if (!openingBalance) return toast.error("Input modal laci dulu, Zi!");
+    if (!openingMoney) return toast.error("Input modal laci dulu!");
     setLoadingShift(true);
     try {
-      const payload = {
+      const res = await openShift({
         userId: localStorage.getItem("email"),
-        openingBalance: openingBalance,
-      };
-      const res = await openShift(payload);
+        openingBalance,
+      });
       if (res.data) {
         setActiveShift(res.data);
-        toast.success("Shift Berhasil Dibuka!");
+        toast.success("Shift Dimulai!");
       }
     } catch (err) {
-      toast.error("Gagal membuka shift.");
+      toast.error("Gagal buka shift.");
     } finally {
       setLoadingShift(false);
     }
   };
 
-  // --- RENDER 1: JIKA SHIFT BELUM DIBUKA (GEMBOK) ---
+  const handleEndShift = async (e) => {
+    e.preventDefault();
+    if (!actualCash) return toast.error("Hitung uang laci dulu!");
+    setLoadingShift(true);
+    try {
+      const res = await closeShift({
+        shiftId: activeShift.id,
+        actualBalance: actualCash,
+      });
+      if (res.data) {
+        const variance = res.data.variance;
+        if (variance < 0)
+          toast.error(
+            `Shift Tutup. Selisih: -Rp ${Math.abs(variance).toLocaleString()}`,
+          );
+        else toast.success("Shift Tutup. Sinkron!");
+
+        alert(
+          `INSTRUKSI SETORAN:\n-------------------\nSetoran ke Owner: Rp ${(res.data.actualBalance - settings.defaultFloatAmount).toLocaleString()}\nTinggalkan di laci: Rp ${settings.defaultFloatAmount.toLocaleString()}`,
+        );
+
+        window.location.reload();
+      }
+    } catch (err) {
+      toast.error("Gagal tutup shift.");
+    } finally {
+      setLoadingShift(false);
+    }
+  };
+
+  // --- RENDER 1: OPENING SHIFT (GEMBOK) ---
   if (!activeShift || !activeShift.id || activeShift.status !== "OPEN") {
     return (
       <div
@@ -92,23 +123,17 @@ const Explore = () => {
             maxWidth: "450px",
             border: "1px solid #333",
             background: "#1a1a1a",
-            borderRadius: "20px",
+            borderRadius: "24px",
           }}
         >
           <i
             className="bi bi-door-open text-info"
             style={{ fontSize: "3rem" }}
           ></i>
-          <h2
-            className="fw-bold text-white mt-3"
-            style={{ letterSpacing: "1px" }}
-          >
-            OPENING SHIFT
-          </h2>
+          <h2 className="fw-bold text-white mt-3">OPENING SHIFT</h2>
           <p className="text-secondary small mb-4">
             Halo <b>{userName}</b>, konfirmasi modal untuk mulai.
           </p>
-
           <div className="alert bg-dark border-secondary text-start mb-4 py-2">
             <small
               className="text-secondary d-block"
@@ -116,11 +141,10 @@ const Explore = () => {
             >
               MODAL SEHARUSNYA:
             </small>
-            <span className="text-info fw-bold">
+            <span className="text-info fw-bold fs-5">
               Rp {settings?.defaultFloatAmount?.toLocaleString() || 0}
             </span>
           </div>
-
           <form onSubmit={handleStartShift}>
             <div className="mb-4 text-start">
               <label className="form-label small fw-bold text-light">
@@ -129,7 +153,6 @@ const Explore = () => {
               <input
                 type="number"
                 className="form-control form-control-lg bg-dark text-white border-secondary text-center fw-bold text-info"
-                placeholder="0"
                 value={openingBalance}
                 onChange={(e) => setOpeningBalance(e.target.value)}
                 required
@@ -140,7 +163,7 @@ const Explore = () => {
               className="btn btn-info w-100 fw-bold py-3 shadow"
               disabled={loadingShift}
             >
-              {loadingShift ? "PROSES..." : "BUKA KASIR SEKARANG"}
+              KONFIRMASI & MULAI SHIFT
             </button>
           </form>
         </div>
@@ -148,34 +171,123 @@ const Explore = () => {
     );
   }
 
-  // --- RENDER 2: UI KASIR ASLI LO (TIDAK ADA YANG BERUBAH) ---
+  // --- RENDER 2: UI KASIR ---
   return (
     <div className="pos-container text-light">
+      {/* MODAL CLOSING SHIFT */}
+      {showCloseModal && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div
+              className="modal-content bg-dark border-secondary text-light shadow-lg"
+              style={{ borderRadius: "20px" }}
+            >
+              <div className="modal-header border-secondary p-4">
+                <h5 className="fw-bold m-0">
+                  <i className="bi bi-power text-danger me-2"></i>AKHIRI SHIFT
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowCloseModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleEndShift}>
+                <div className="modal-body p-4">
+                  <p className="text-secondary small mb-4">
+                    Hitung uang fisik di laci tanpa melihat angka di layar.
+                  </p>
+                  <label className="form-label small fw-bold text-info">
+                    TOTAL UANG FISIK (RP)
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control bg-black text-white border-secondary text-center fw-bold fs-3 py-3"
+                    value={actualCash}
+                    onChange={(e) => setActualCash(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="modal-footer border-secondary p-3">
+                  <button
+                    type="button"
+                    className="btn btn-secondary px-4"
+                    onClick={() => setShowCloseModal(false)}
+                  >
+                    BATAL
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-danger fw-bold px-4"
+                    disabled={loadingShift}
+                  >
+                    TUTUP KASIR
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="row g-4">
         <div className="col-lg-8">
+          {/* --- HEADER AREA (POLESAN BARU) --- */}
           <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
             <div className="page-title-section">
-              <h2
-                className="fw-bold m-0 d-flex align-items-center text-white"
-                style={{ letterSpacing: "1px" }}
-              >
-                <i className="bi bi-cash-stack me-3 text-info"></i> CASHIER
-              </h2>
-              <div className="d-flex align-items-center gap-2 mt-1">
+              <div className="d-flex align-items-center gap-3 mb-2">
+                <h2
+                  className="fw-bold m-0 text-white"
+                  style={{ letterSpacing: "1px" }}
+                >
+                  <i className="bi bi-cash-stack me-2 text-info"></i> CASHIER
+                </h2>
+                {/* Badge Status (Gelembung Biru) */}
+                <span
+                  className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25"
+                  style={{ fontSize: "10px", padding: "5px 12px" }}
+                >
+                  ● SHIFT ACTIVE
+                </span>
+              </div>
+
+              <div className="d-flex align-items-center gap-2">
                 <span
                   className="text-secondary fw-bold"
                   style={{ fontSize: "10px", letterSpacing: "2px" }}
                 >
                   TRANSACTION MODULE
                 </span>
-                <span
-                  className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"
-                  style={{ fontSize: "9px" }}
+
+                {/* TOMBOL AKHIRI SHIFT (GELEMBUNG MERAH) */}
+                <button
+                  className="btn btn-sm rounded-pill ms-2 d-flex align-items-center gap-1"
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "800",
+                    background: "rgba(220, 53, 69, 0.1)", // Background Merah Transparan
+                    color: "#dc3545", // Warna Teks Merah
+                    border: "1px solid rgba(220, 53, 69, 0.2)",
+                    padding: "2px 10px",
+                    transition: "0.3s",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = "rgba(220, 53, 69, 0.2)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = "rgba(220, 53, 69, 0.1)";
+                  }}
+                  onClick={() => setShowCloseModal(true)}
                 >
-                  SHIFT ACTIVE
-                </span>
+                  <i className="bi bi-power"></i> AKHIRI SHIFT
+                </button>
               </div>
             </div>
+
             <div className="search-wrapper" style={{ width: "350px" }}>
               <div className="input-group shadow-sm">
                 <span className="input-group-text bg-dark border-secondary text-secondary">
