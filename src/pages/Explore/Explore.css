@@ -112,3 +112,42 @@
   background-color: #fff;
   transform: scale(1.02);
 }
+/* --- CSS STRUK THERMAL (58mm Standard) --- */
+@media print {
+  /* Sembunyiin SEMUA elemen di layar tanpa kecuali */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Munculin cuma struk dan isinya */
+  #ziro-receipt,
+  #ziro-receipt * {
+    visibility: visible;
+  }
+
+  /* Atur Struk agar berada di pojok kiri atas kertas */
+  #ziro-receipt {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 58mm; /* Ukuran lebar kertas thermal */
+    background: #fff !important;
+    color: #000 !important;
+    padding: 5mm;
+    font-family: "Courier New", Courier, monospace; /* Font mesin kasir */
+    font-size: 10pt;
+    line-height: 1.2;
+  }
+
+  /* Hilangkan header/footer otomatis dari browser (tanggal/url di pojok kertas) */
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}
+
+/* Biar struk gak muncul di layar utama (tetap sembunyi pas gak diprint) */
+#ziro-receipt {
+  display: none;
+}
