@@ -1,22 +1,32 @@
-/* --- 1. IMPORT FONT POPPINS DARI GOOGLE --- */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
-/* --- 2. TERAPKAN KE SELURUH APLIKASI --- */
-body {
-  margin: 0;
-  /* Ini kuncinya: Panggil Poppins sebagai font utama */
-  font-family: "Poppins", sans-serif;
-
-  /* Ini biar tulisannya halus di layar (antialiasing) */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  /* Biar warna background agak abu dikit (biar mata gak sakit lihat putih terang) */
-  background-color: #f8f9fa;
+:root {
+  /* Warna Gelap Management yang lo suka, kita pake buat standar semua room */
+  --bg-main: #121416; /* Background Layar Utama */
+  --bg-card: #1a1d20; /* Background Kotak/Card */
+  --bg-input: #0f1113; /* Background Input & Baris Tabel */
+  --accent: #0dcaf0; /* Cyan Zirocraft lo */
+  --border: #2d3238; /* Garis halus */
+  --text-main: #ffffff;
+  --text-muted: #e0e0e0;
 }
 
-/* --- (Opsional) Tambahan biar kodingan lebih rapi --- */
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background-color: var(--bg-main) !important; /* Paksa semua room jadi gelap */
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Judul Zirocraft Standard */
+.ziro-title {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-left: 5px solid var(--accent);
+  padding-left: 15px;
+  margin-bottom: 25px;
+  font-size: 1.4rem;
+  text-transform: uppercase;
 }

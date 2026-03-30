@@ -1,61 +1,108 @@
-/* --- 1. CONTAINER UTAMA (LAYOUT DASAR) --- */
+/* --- 1. CONTAINER UTAMA (SEHATI SAMA KASIR) --- */
 .category-container {
-  width: 100%; /* Paksa lebar penuh 100% */
-  min-height: 90vh; /* Tinggi minimal setara layar */
-  background-color: #222; /* Background utama gelap */
-
-  /* Flexbox untuk layout Kiri-Kanan */
+  width: 100%;
+  min-height: 94vh;
+  background-color: var(--bg-main); /* #121416 */
   display: flex;
-  flex-direction: row; /* Default: Bersebelahan */
-  gap: 25px; /* Jarak antar kotak lebih lega */
-  padding: 2rem; /* Jarak dari pinggir layar */
-  box-sizing: border-box; /* Agar padding tidak bikin scroll samping */
+  flex-direction: row;
+  gap: 25px;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
-/* --- 2. KOLOM KIRI (FORM INPUT) --- */
+/* --- 2. KOLOM KIRI (CARD STYLE) --- */
 .left-column {
-  flex: 1; /* Ambil 1 bagian ruang (25%) */
-  background-color: #2c3034;
+  flex: 1;
+  background-color: var(--bg-card); /* #1a1d20 */
   padding: 25px;
-  border-radius: 12px; /* Sudut lebih membulat (Modern) */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); /* Bayangan lebih halus & dalam */
-  height: fit-content; /* Tinggi menyesuaikan isi form */
-  border: 1px solid #3a3f44; /* Garis tepi tipis biar tegas */
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  height: fit-content;
+  border: 1px solid var(--border);
 }
 
-/* --- 3. KOLOM KANAN (TABEL LIST) --- */
+/* --- 3. KOLOM KANAN (CARD STYLE) --- */
 .right-column {
-  flex: 3; /* Ambil 3 bagian ruang (75%) - LEBIH LEBAR */
-  background-color: #2c3034;
+  flex: 3;
+  background-color: var(--bg-card);
   padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  border: 1px solid #3a3f44;
-  overflow-x: auto; /* Biar tabel bisa di-scroll kalau layar sempit */
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  overflow-x: auto;
 }
 
-/* --- 4. TYPOGRAPHY (JUDUL) --- */
-h2 {
+/* --- 4. TABEL (EYE-FRIENDLY & CLEAN) --- */
+.table {
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.table thead th {
+  background-color: var(--bg-input) !important;
+  color: var(--accent) !important;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 15px 12px;
+  border: none;
+}
+
+.table tbody td {
+  padding: 14px 12px;
+  color: var(--text-muted); /* Off-white */
+  background-color: var(--bg-input); /* Lebih gelap dari card */
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+/* Mempercantik sudut baris tabel */
+.table tbody tr td:first-child {
+  border-left: 1px solid var(--border);
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.table tbody tr td:last-child {
+  border-right: 1px solid var(--border);
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.product-name {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.product-price {
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+.table-hover tbody tr:hover td {
+  background-color: #24282c !important;
   color: #fff;
-  font-weight: 700; /* Lebih tebal biar gagah */
-  letter-spacing: 0.5px;
-  border-bottom: 3px solid #0dcaf0; /* Garis Cyan lebih tebal */
-  padding-bottom: 15px;
-  margin-bottom: 25px;
-  font-size: 1.5rem;
 }
 
-/* --- 5. RESPONSIVE (UPDATE PENTING!) --- */
-/* Kalau layar kurang dari 992px (Tablet Portrait / HP), ubah jadi tumpuk */
-@media (max-width: 992px) {
-  .category-container {
-    flex-direction: column; /* Ubah jadi Atas-Bawah */
-    padding: 1rem; /* Kurangi padding biar muat di HP */
-  }
+/* Label Form */
+label {
+  color: #adb5bd !important;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
 
-  .left-column,
-  .right-column {
-    width: 100%; /* Lebar full di layar kecil */
-    flex: none; /* Matikan rasio 1:3 */
-  }
+.form-control,
+.form-select {
+  background-color: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 10px 15px;
+}
+
+.form-control:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 202, 240, 0.15) !important;
 }
