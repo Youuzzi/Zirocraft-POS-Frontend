@@ -2,12 +2,22 @@ import React, { useState, useContext } from "react";
 import "./Explore.css";
 import { AppContext } from "../../context/AppContext";
 import CategoryList from "../../CategoryList/CategoryList";
-import { openShift, closeShift } from "../../Service/ShiftService";
+import {
+  openShift,
+  closeShift,
+  recordExpense,
+} from "../../Service/ShiftService";
 import toast from "react-hot-toast";
 
 const Explore = () => {
-  const { products, activeShift, setActiveShift, settings, userName } =
-    useContext(AppContext);
+  const {
+    products,
+    activeShift,
+    setActiveShift,
+    settings,
+    userName,
+    loadData,
+  } = useContext(AppContext);
 
   // --- STATE LOKAL ---
   const [cart, setCart] = useState([]);
@@ -17,6 +27,10 @@ const Explore = () => {
   const [loadingShift, setLoadingShift] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [actualCash, setActualCash] = useState("");
+
+  // STATE MODAL PENGELUARAN
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseData, setExpenseData] = useState({ desc: "", amount: "" });
 
   // --- LOGIC KASIR ---
   const addToCart = (product) => {
@@ -33,7 +47,6 @@ const Explore = () => {
       setCart([...cart, { ...product, qty: 1 }]);
     }
   };
-
   const updateQty = (id, delta) => {
     setCart(
       cart.map((item) => {
@@ -45,7 +58,6 @@ const Explore = () => {
       }),
     );
   };
-
   const removeItem = (id) => setCart(cart.filter((item) => item.itemId !== id));
 
   const filteredProducts = products.filter((item) => {
@@ -59,10 +71,10 @@ const Explore = () => {
 
   const totalPrice = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
-  // --- LOGIC SHIFT ---
+  // --- LOGIC: BUKA SHIFT ---
   const handleStartShift = async (e) => {
     e.preventDefault();
-    if (!openingMoney) return toast.error("Input modal laci dulu!");
+    if (!openingBalance) return toast.error("Input modal laci dulu!");
     setLoadingShift(true);
     try {
       const res = await openShift({
@@ -80,6 +92,34 @@ const Explore = () => {
     }
   };
 
+  // --- LOGIC: CATAT PENGELUARAN ---
+  const handleSaveExpense = async (e) => {
+    e.preventDefault();
+    if (!expenseData.desc || !expenseData.amount)
+      return toast.error("Lengkapi data pengeluaran!");
+    setLoadingShift(true);
+    try {
+      const payload = {
+        shiftId: activeShift.id,
+        description: expenseData.desc,
+        amount: expenseData.amount,
+        userId: localStorage.getItem("email"),
+      };
+      const res = await recordExpense(payload);
+      if (res.data) {
+        toast.success("Pengeluaran Berhasil Dicatat!");
+        setShowExpenseModal(false);
+        setExpenseData({ desc: "", amount: "" });
+        loadData(); // Update total_expenses di state global
+      }
+    } catch (err) {
+      toast.error("Gagal mencatat pengeluaran.");
+    } finally {
+      setLoadingShift(false);
+    }
+  };
+
+  // --- LOGIC: TUTUP SHIFT ---
   const handleEndShift = async (e) => {
     e.preventDefault();
     if (!actualCash) return toast.error("Hitung uang laci dulu!");
@@ -90,17 +130,9 @@ const Explore = () => {
         actualBalance: actualCash,
       });
       if (res.data) {
-        const variance = res.data.variance;
-        if (variance < 0)
-          toast.error(
-            `Shift Tutup. Selisih: -Rp ${Math.abs(variance).toLocaleString()}`,
-          );
-        else toast.success("Shift Tutup. Sinkron!");
-
         alert(
-          `INSTRUKSI SETORAN:\n-------------------\nSetoran ke Owner: Rp ${(res.data.actualBalance - settings.defaultFloatAmount).toLocaleString()}\nTinggalkan di laci: Rp ${settings.defaultFloatAmount.toLocaleString()}`,
+          `SHIFT SELESAI!\n\nSetoran ke Owner: Rp ${(res.data.actualBalance - settings.defaultFloatAmount).toLocaleString()}\nTinggalkan di laci: Rp ${settings.defaultFloatAmount.toLocaleString()}`,
         );
-
         window.location.reload();
       }
     } catch (err) {
@@ -110,7 +142,7 @@ const Explore = () => {
     }
   };
 
-  // --- RENDER 1: OPENING SHIFT (GEMBOK) ---
+  // --- RENDER 1: OPENING SHIFT ---
   if (!activeShift || !activeShift.id || activeShift.status !== "OPEN") {
     return (
       <div
@@ -157,6 +189,22 @@ const Explore = () => {
                 onChange={(e) => setOpeningBalance(e.target.value)}
                 required
               />
+              <div
+                className="mt-3 p-2 rounded"
+                style={{
+                  background: "rgba(255,193,7,0.05)",
+                  border: "1px dashed rgba(255,193,7,0.3)",
+                }}
+              >
+                <p
+                  className="text-warning mb-0"
+                  style={{ fontSize: "11px", textAlign: "left" }}
+                >
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                  Jika jumlah tidak sesuai, silakan lapor ke Admin sebelum
+                  konfirmasi.
+                </p>
+              </div>
             </div>
             <button
               type="submit"
@@ -171,9 +219,87 @@ const Explore = () => {
     );
   }
 
-  // --- RENDER 2: UI KASIR ---
   return (
     <div className="pos-container text-light">
+      {/* MODAL PENGELUARAN (PETTY CASH) */}
+      {showExpenseModal && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div
+              className="modal-content bg-dark border-secondary text-light shadow-lg"
+              style={{ borderRadius: "20px" }}
+            >
+              <div className="modal-header border-secondary p-4">
+                <h5 className="fw-bold m-0 text-warning">
+                  <i className="bi bi-wallet2 me-2"></i>CATAT PENGELUARAN
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowExpenseModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleSaveExpense}>
+                <div className="modal-body p-4">
+                  <div className="mb-3">
+                    <label className="small fw-bold text-secondary mb-2">
+                      KETERANGAN
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control bg-black text-white border-secondary"
+                      placeholder="Beli es batu, parkir, dll"
+                      value={expenseData.desc}
+                      onChange={(e) =>
+                        setExpenseData({ ...expenseData, desc: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="small fw-bold text-secondary mb-2">
+                      NOMINAL (RP)
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control bg-black text-info fw-bold border-secondary"
+                      placeholder="0"
+                      value={expenseData.amount}
+                      onChange={(e) =>
+                        setExpenseData({
+                          ...expenseData,
+                          amount: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer border-secondary">
+                  <button
+                    type="button"
+                    className="btn btn-secondary px-4"
+                    onClick={() => setShowExpenseModal(false)}
+                  >
+                    BATAL
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-warning fw-bold text-dark px-4"
+                    disabled={loadingShift}
+                  >
+                    SIMPAN
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL CLOSING SHIFT */}
       {showCloseModal && (
         <div
@@ -236,7 +362,6 @@ const Explore = () => {
 
       <div className="row g-4">
         <div className="col-lg-8">
-          {/* --- HEADER AREA (POLESAN BARU) --- */}
           <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
             <div className="page-title-section">
               <div className="d-flex align-items-center gap-3 mb-2">
@@ -246,7 +371,6 @@ const Explore = () => {
                 >
                   <i className="bi bi-cash-stack me-2 text-info"></i> CASHIER
                 </h2>
-                {/* Badge Status (Gelembung Biru) */}
                 <span
                   className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25"
                   style={{ fontSize: "10px", padding: "5px 12px" }}
@@ -263,23 +387,31 @@ const Explore = () => {
                   TRANSACTION MODULE
                 </span>
 
-                {/* TOMBOL AKHIRI SHIFT (GELEMBUNG MERAH) */}
+                {/* TOMBOL PENGELUARAN */}
                 <button
                   className="btn btn-sm rounded-pill ms-2 d-flex align-items-center gap-1"
                   style={{
                     fontSize: "10px",
                     fontWeight: "800",
-                    background: "rgba(220, 53, 69, 0.1)", // Background Merah Transparan
-                    color: "#dc3545", // Warna Teks Merah
+                    background: "rgba(255, 193, 7, 0.1)",
+                    color: "#ffc107",
+                    border: "1px solid rgba(255, 193, 7, 0.2)",
+                    padding: "2px 10px",
+                  }}
+                  onClick={() => setShowExpenseModal(true)}
+                >
+                  <i className="bi bi-wallet2"></i> PENGELUARAN
+                </button>
+
+                <button
+                  className="btn btn-sm rounded-pill ms-1 d-flex align-items-center gap-1"
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "800",
+                    background: "rgba(220, 53, 69, 0.1)",
+                    color: "#dc3545",
                     border: "1px solid rgba(220, 53, 69, 0.2)",
                     padding: "2px 10px",
-                    transition: "0.3s",
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = "rgba(220, 53, 69, 0.2)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = "rgba(220, 53, 69, 0.1)";
                   }}
                   onClick={() => setShowCloseModal(true)}
                 >
@@ -341,8 +473,13 @@ const Explore = () => {
           >
             <div className="p-4 border-bottom border-secondary bg-black bg-opacity-10">
               <div className="d-flex justify-content-between align-items-center">
-                <h5 className="fw-bold m-0 text-white">ORDER DETAILS</h5>
-                <span className="badge rounded-pill bg-info text-dark px-3 fw-bold">
+                <h5
+                  className="fw-bold m-0 text-white"
+                  style={{ letterSpacing: "1px" }}
+                >
+                  ORDER DETAILS
+                </h5>
+                <span className="badge rounded-pill bg-info text-dark px-3 fw-bold shadow-sm">
                   {cart.length} ITEMS
                 </span>
               </div>

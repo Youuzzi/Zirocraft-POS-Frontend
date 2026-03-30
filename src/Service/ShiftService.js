@@ -8,8 +8,11 @@ export const openShift = async (data) => {
   return await api.post("/shifts/open", data);
 };
 
-// Pipa untuk tutup shift
+export const recordExpense = async (data) => {
+  // data: { shiftId, description, amount, userId }
+  return await api.post("/shifts/expense", data);
+};
+
 export const closeShift = async (data) => {
-  // data: { shiftId, actualBalance }
   return await api.post("/shifts/close", data);
 };
