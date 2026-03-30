@@ -13,14 +13,12 @@ export const AppContextProvider = (props) => {
   const [userName, setUserName] = useState(
     localStorage.getItem("name") || "Administrator",
   );
-
-  // --- TAMBAHKAN STATE ROLE REAKTIF ---
   const [role, setRole] = useState(localStorage.getItem("role") || "");
-
   const [activeShift, setActiveShift] = useState(null);
   const [settings, setSettings] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // --- FUNGSI UTAMA LOAD DATA ---
   const loadData = async () => {
     if (!token || token === "[object Object]" || token === "undefined") {
       setActiveShift(null);
@@ -52,6 +50,7 @@ export const AppContextProvider = (props) => {
       }
 
       setIsDataLoaded(true);
+      console.log("AppContext: Sinkronisasi Berhasil!");
     } catch (err) {
       console.error("AppContext Error:", err);
       setIsDataLoaded(true);
@@ -72,13 +71,13 @@ export const AppContextProvider = (props) => {
     userName,
     setUserName,
     role,
-    setRole, // Bagikan Role
+    setRole,
     activeShift,
     setActiveShift,
     settings,
     setSettings,
     isDataLoaded,
-    loadData,
+    loadData, // <--- NAMA FUNGSI RESMI ADALAH loadData
   };
 
   return (

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext } from "react";
 import { AppContext } from "../../context/AppContext";
 import { fetchItems, addItem, deleteItem } from "../../Service/ItemService";
 import { fetchCategories } from "../../Service/CategoryService";
+import api from "../../Service/api";
 import toast from "react-hot-toast";
-import "../ManageCategory/ManageCategory.css"; // Reuse CSS yang sudah dipoles
+import "../ManageCategory/ManageCategory.css";
 
 const ManageItems = () => {
-  const { products, setProducts, categories, setCategories } =
+  // FIX: Ambil loadData (bukan loadInitialData)
+  const { products, categories, loadData, isDataLoaded } =
     useContext(AppContext);
 
   const [name, setName] = useState("");
@@ -18,21 +20,24 @@ const ManageItems = () => {
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
+
+  // Gunakan loadData dari context saat halaman pertama kali dibuka
   useEffect(() => {
-    loadInitialData();
+    loadData();
   }, []);
 
-  const loadInitialData = async () => {
-    try {
-      const [resCat, resItems] = await Promise.all([
-        fetchCategories(),
-        fetchItems(),
-      ]);
-      if (resCat.data) setCategories(resCat.data);
-      if (resItems.data) setProducts(resItems.data);
-    } catch (err) {
-      toast.error("Gagal sinkronisasi data.");
-    }
+  const handleEdit = (item) => {
+    setIsEditing(true);
+    setEditId(item.itemId);
+    setName(item.name);
+    setPrice(item.price);
+    setStock(item.stock);
+    setCategoryId(item.categoryId);
+    setDescription(item.description);
+    setPreview(item.imgUrl);
+    window.scrollTo(0, 0);
   };
 
   const handleImageChange = (e) => {
@@ -45,13 +50,9 @@ const ManageItems = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!name || !categoryId || !price || !image || !stock) {
-      toast.error("Lengkapi data menu, Zi! ❌");
-      return;
-    }
     setLoading(true);
     const formData = new FormData();
-    formData.append("file", image);
+    if (image) formData.append("file", image);
     formData.append(
       "item",
       JSON.stringify({
@@ -64,14 +65,17 @@ const ManageItems = () => {
     );
 
     try {
-      const response = await addItem(formData);
-      if (response.status === 201 || response.status === 200) {
+      if (isEditing) {
+        await api.put(`/admin/items/${editId}`, formData);
+        toast.success("Item Berhasil Diupdate! 📦");
+      } else {
+        await addItem(formData);
         toast.success("Menu Berhasil Disimpan! 🚀");
-        resetForm();
-        loadInitialData();
       }
+      resetForm();
+      loadData(); // Refresh data global
     } catch (err) {
-      toast.error("Gagal simpan ke backend.");
+      toast.error("Gagal simpan ke database.");
     } finally {
       setLoading(false);
     }
@@ -85,6 +89,8 @@ const ManageItems = () => {
     setDescription("");
     setImage(null);
     setPreview(null);
+    setIsEditing(false);
+    setEditId(null);
     if (document.getElementById("itemImage"))
       document.getElementById("itemImage").value = "";
   };
@@ -94,25 +100,34 @@ const ManageItems = () => {
       try {
         await deleteItem(id);
         toast.success("Menu dihapus! 🗑️");
-        loadInitialData();
+        loadData();
       } catch (err) {
         toast.error("Gagal hapus.");
       }
     }
   };
 
+  // Tampilkan loading jika data context belum siap
+  if (!isDataLoaded)
+    return (
+      <div className="category-container">
+        <p className="text-info">Loading Database...</p>
+      </div>
+    );
+
   return (
     <div className="category-container">
-      {/* --- BAGIAN FORM --- */}
       <div className="left-column">
-        <h2 className="ziro-title">{loading ? "SAVING..." : "Add New Menu"}</h2>
+        <h2 className="ziro-title">
+          {isEditing ? "EDIT / RESTOK MENU" : "ADD NEW MENU"}
+        </h2>
         <form onSubmit={handleSave}>
           <div className="mb-3">
-            <label>NAMA MENU / PRODUK</label>
+            <label className="small fw-bold text-light">NAMA MENU</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Kopi Hitam..."
+              placeholder="Nama..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -120,7 +135,7 @@ const ManageItems = () => {
           </div>
           <div className="row">
             <div className="col-md-6 mb-3">
-              <label>HARGA (RP)</label>
+              <label className="small fw-bold text-light">HARGA (RP)</label>
               <input
                 type="number"
                 className="form-control"
@@ -130,10 +145,10 @@ const ManageItems = () => {
               />
             </div>
             <div className="col-md-6 mb-3">
-              <label>STOK</label>
+              <label className="small fw-bold text-light">STOK</label>
               <input
                 type="number"
-                className="form-control"
+                className="form-control text-info fw-bold"
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
                 required
@@ -141,7 +156,7 @@ const ManageItems = () => {
             </div>
           </div>
           <div className="mb-3">
-            <label>KATEGORI</label>
+            <label className="small fw-bold text-light">KATEGORI</label>
             <select
               className="form-select"
               value={categoryId}
@@ -157,13 +172,13 @@ const ManageItems = () => {
             </select>
           </div>
           <div className="mb-3">
-            <label>FOTO PRODUK</label>
+            <label className="small fw-bold text-light">FOTO PRODUK</label>
             <input
               id="itemImage"
               type="file"
               className="form-control"
               onChange={handleImageChange}
-              required
+              required={!isEditing}
             />
             {preview && (
               <img
@@ -174,22 +189,34 @@ const ManageItems = () => {
                   width: "100%",
                   height: "150px",
                   objectFit: "cover",
-                  border: "1px solid var(--accent)",
+                  border: "1px solid #0dcaf0",
                 }}
               />
             )}
           </div>
           <button
             type="submit"
-            className="btn btn-info w-100 fw-bold py-3 mt-2 shadow"
+            className="btn btn-info w-100 fw-bold py-3 shadow"
             disabled={loading}
           >
-            SAVE MENU
+            {loading
+              ? "SAVING..."
+              : isEditing
+                ? "UPDATE DATA"
+                : "SAVE TO DATABASE"}
           </button>
+          {isEditing && (
+            <button
+              type="button"
+              className="btn btn-secondary w-100 mt-2"
+              onClick={resetForm}
+            >
+              BATAL EDIT
+            </button>
+          )}
         </form>
       </div>
 
-      {/* --- BAGIAN TABEL --- */}
       <div className="right-column">
         <h2 className="ziro-title">Menu List</h2>
         <div className="table-responsive">
@@ -198,7 +225,6 @@ const ManageItems = () => {
               <tr>
                 <th>IMG</th>
                 <th>NAME</th>
-                <th>CATEGORY</th>
                 <th>PRICE</th>
                 <th>STOK</th>
                 <th className="text-center">ACTION</th>
@@ -220,24 +246,21 @@ const ManageItems = () => {
                     />
                   </td>
                   <td className="product-name">{item.name}</td>
-                  <td>
-                    <span className="badge bg-secondary bg-opacity-25 text-info">
-                      {item.categoryName}
-                    </span>
-                  </td>
                   <td className="product-price">
                     Rp {parseInt(item.price).toLocaleString()}
                   </td>
-                  <td
-                    className={
-                      item.stock < 5 ? "text-danger fw-bold" : "text-light"
-                    }
-                  >
+                  <td className={item.stock < 5 ? "text-danger fw-bold" : ""}>
                     {item.stock}
                   </td>
                   <td className="text-center">
                     <button
-                      className="btn btn-sm text-danger opacity-75"
+                      className="btn btn-sm text-info me-2 border-0 bg-transparent"
+                      onClick={() => handleEdit(item)}
+                    >
+                      <i className="bi bi-pencil-square"></i>
+                    </button>
+                    <button
+                      className="btn btn-sm text-danger border-0 bg-transparent"
                       onClick={() => handleDelete(item.itemId)}
                     >
                       <i className="bi bi-trash3-fill"></i>
@@ -252,5 +275,4 @@ const ManageItems = () => {
     </div>
   );
 };
-
 export default ManageItems;
