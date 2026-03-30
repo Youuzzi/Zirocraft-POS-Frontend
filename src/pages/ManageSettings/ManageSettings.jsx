@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { fetchSettings, updateSettings } from "../../Service/SettingService";
+import { AppContext } from "../../context/AppContext"; // Import Context
 import toast from "react-hot-toast";
 
 const ManageSettings = () => {
+  const { loadData } = useContext(AppContext); // Ambil loadData dari context
   const [settings, setSettings] = useState({
     storeName: "",
     defaultFloatAmount: 0,
@@ -18,7 +20,6 @@ const ManageSettings = () => {
       const res = await fetchSettings();
       if (res.data) setSettings(res.data);
     } catch (err) {
-      console.error(err);
       toast.error("Gagal load settings.");
     }
   };
@@ -27,12 +28,16 @@ const ManageSettings = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Pastikan angka dikirim sebagai number, bukan string
       const dataToSave = {
         ...settings,
         defaultFloatAmount: Number(settings.defaultFloatAmount),
       };
       await updateSettings(dataToSave);
+
+      // --- INILAH KUNCI TANPA REFRESH ---
+      await loadData();
+      // ----------------------------------
+
       toast.success("Pengaturan Toko Berhasil Diperbarui! 🚀");
     } catch (err) {
       toast.error("Gagal menyimpan perubahan.");

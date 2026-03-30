@@ -1,12 +1,16 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { AppContext } from "../../context/AppContext";
-import { deleteCategory, addCategory } from "../../Service/CategoryService";
-import toast from "react-hot-toast"; // Sudah aktif!
+import {
+  deleteCategory,
+  addCategory,
+  fetchCategories,
+} from "../../Service/CategoryService";
+import toast from "react-hot-toast";
 
 import "./ManageCategory.css";
 
 const ManageCategory = () => {
-  // 1. Ambil data global dari Context
+  // 1. Ambil data global dari Context (Agar sinkron dengan Kasir)
   const { categories, setCategories } = useContext(AppContext);
 
   // 2. State untuk Form
@@ -29,14 +33,12 @@ const ManageCategory = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    // Validasi input
     if (!name || !image) {
       toast.error("Nama kategori dan Gambar wajib ada, Zi! ❌");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const formData = new FormData();
       const categoryData = {
@@ -50,11 +52,11 @@ const ManageCategory = () => {
 
       const response = await addCategory(formData);
 
-      if (response.status === 201) {
-        // Update list kategori secara realtime
-        setCategories([...categories, response.data]);
+      if (response.status === 201 || response.status === 200) {
+        // REAKTIF: Ambil data terbaru dari server agar Kasir ikut update
+        const resRefresh = await fetchCategories();
+        setCategories(resRefresh.data);
 
-        // Notifikasi Sukses
         toast.success("Kategori berhasil ditambahkan! 🚀");
 
         // Reset Form
@@ -62,7 +64,9 @@ const ManageCategory = () => {
         setDescription("");
         setImage(null);
         setPreview(null);
-        document.getElementById("categoryImageInput").value = "";
+        if (document.getElementById("categoryImageInput")) {
+          document.getElementById("categoryImageInput").value = "";
+        }
       }
     } catch (error) {
       console.error(error);
@@ -74,12 +78,15 @@ const ManageCategory = () => {
 
   // --- HANDLER: HAPUS KATEGORI ---
   const handleDelete = async (categoryId) => {
-    // Confirm standar browser biar nggak salah klik hapus
-    if (window.confirm("Yakin mau hapus kategori ini, bro?")) {
+    if (
+      window.confirm(
+        "Yakin mau hapus kategori ini, bro? Semua produk di kategori ini mungkin akan terpengaruh.",
+      )
+    ) {
       try {
         const response = await deleteCategory(categoryId);
-        if (response.status === 204) {
-          // Filter data yang dihapus dari list
+        if (response.status === 204 || response.status === 200) {
+          // REAKTIF: Filter data di state global
           setCategories(
             categories.filter(
               (cat) => (cat.categoryId || cat.id) !== categoryId,
@@ -97,24 +104,29 @@ const ManageCategory = () => {
   return (
     <div className="category-container">
       {/* --- FORM INPUT (KIRI) --- */}
-      <div className="left-column text-light">
-        <h2>Add Category</h2>
+      <div className="left-column">
+        <h2 className="ziro-title">Add Category</h2>
         <form onSubmit={handleSave}>
           <div className="mb-3">
-            <label className="form-label">Category Name</label>
+            <label className="form-label small fw-bold text-light">
+              CATEGORY NAME
+            </label>
             <input
               type="text"
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               placeholder="Contoh: Minuman Dingin"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
             />
           </div>
 
           <div className="mb-3">
-            <label className="form-label">Description</label>
+            <label className="form-label small fw-bold text-light">
+              DESCRIPTION
+            </label>
             <textarea
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               placeholder="Penjelasan singkat..."
               rows="2"
               value={description}
@@ -123,13 +135,16 @@ const ManageCategory = () => {
           </div>
 
           <div className="mb-3">
-            <label className="form-label">Category Image</label>
+            <label className="form-label small fw-bold text-light">
+              CATEGORY IMAGE
+            </label>
             <input
               id="categoryImageInput"
               type="file"
               accept="image/*"
-              className="form-control bg-dark text-light border-secondary"
+              className="form-control bg-dark text-white border-secondary"
               onChange={handleImageChange}
+              required
             />
             {preview && (
               <div className="mt-3 text-center">
@@ -150,78 +165,71 @@ const ManageCategory = () => {
 
           <button
             type="submit"
-            className="btn btn-info w-100 fw-bold"
+            className="btn btn-info w-100 fw-bold py-3 mt-2"
             disabled={isLoading}
           >
-            {isLoading ? (
-              <span>
-                <span className="spinner-border spinner-border-sm me-2"></span>{" "}
-                Processing...
-              </span>
-            ) : (
-              <span>
-                <i className="bi bi-save me-2"></i> Save Category
-              </span>
-            )}
+            {isLoading ? "SAVING..." : "SAVE CATEGORY"}
           </button>
         </form>
       </div>
 
       {/* --- LIST TABEL (KANAN) --- */}
-      <div className="right-column text-light">
-        <h2>Category List</h2>
+      <div className="right-column">
+        <h2 className="ziro-title">Category List</h2>
 
-        {categories.length === 0 ? (
-          <div className="alert alert-secondary bg-dark text-light border-secondary">
-            <i className="bi bi-info-circle me-2"></i> Belum ada kategori di
-            database.
-          </div>
-        ) : (
-          <table className="table table-dark table-hover border-secondary">
+        <div className="table-responsive">
+          <table className="table table-dark table-hover align-middle">
             <thead>
               <tr>
-                <th scope="col">#</th>
-                <th scope="col">Image</th>
-                <th scope="col">Category Name</th>
-                <th scope="col">Action</th>
+                <th className="px-4">#</th>
+                <th>IMAGE</th>
+                <th>CATEGORY NAME</th>
+                <th className="text-center">ACTION</th>
               </tr>
             </thead>
             <tbody>
-              {categories.map((cat, index) => (
-                <tr key={cat.categoryId || cat.id}>
-                  <th scope="row" className="align-middle">
-                    {index + 1}
-                  </th>
-                  <td className="align-middle">
-                    {cat.imgUrl ? (
-                      <img
-                        src={`http://localhost:8080/api/v1.0${cat.imgUrl}`}
-                        alt={cat.name}
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          objectFit: "cover",
-                          borderRadius: "5px",
-                        }}
-                      />
-                    ) : (
-                      <i className="bi bi-image text-muted fs-4"></i>
-                    )}
-                  </td>
-                  <td className="align-middle">{cat.name}</td>
-                  <td className="align-middle">
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(cat.categoryId || cat.id)}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
+              {categories.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-5 text-secondary">
+                    Belum ada kategori di database.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                categories.map((cat, index) => (
+                  <tr key={cat.categoryId || cat.id}>
+                    <td className="px-4 text-secondary">{index + 1}</td>
+                    <td>
+                      {cat.imgUrl ? (
+                        <img
+                          src={`http://localhost:8080/api/v1.0${cat.imgUrl}`}
+                          alt={cat.name}
+                          className="rounded shadow-sm"
+                          style={{
+                            width: "45px",
+                            height: "45px",
+                            objectFit: "cover",
+                            border: "1px solid #333",
+                          }}
+                        />
+                      ) : (
+                        <i className="bi bi-image text-muted fs-4"></i>
+                      )}
+                    </td>
+                    <td className="product-name">{cat.name}</td>
+                    <td className="text-center">
+                      <button
+                        className="btn btn-sm text-danger opacity-75 border-0"
+                        onClick={() => handleDelete(cat.categoryId || cat.id)}
+                      >
+                        <i className="bi bi-trash3-fill"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
     </div>
   );
