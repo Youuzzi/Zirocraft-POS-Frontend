@@ -1,24 +1,24 @@
-/* --- 1. DASAR LAYOUT --- */
+/* --- 1. DASAR LAYOUT (FIX BACKGROUND SYNC) --- */
 .pos-container {
   width: 100%;
   min-height: 94vh;
-  background-color: #222;
-  padding: 2rem;
+  background-color: #121416; /* DISAMAKAN DENGAN MANAGEMENT */
+  padding: 1.5rem 2rem;
   box-sizing: border-box;
 }
 
 /* --- 2. GRID PRODUK --- */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
   gap: 20px;
 }
 
 .product-card {
-  background: #2c3034;
+  background: #1a1d20; /* Lebih terang dari background utama */
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #3a3f44;
+  border: 1px solid #2d3238;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   display: flex;
@@ -27,20 +27,20 @@
 }
 
 .product-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px);
   border-color: #0dcaf0;
-  box-shadow: 0 10px 20px rgba(13, 202, 240, 0.15);
+  box-shadow: 0 10px 25px rgba(13, 202, 240, 0.15);
 }
 
 .product-img-box {
   width: 100%;
-  height: 125px;
-  background: #1a1d20;
+  height: 130px;
+  background: #0f1113;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-bottom: 1px solid #3a3f44;
+  border-bottom: 1px solid #2d3238;
 }
 
 .product-img-box img {
@@ -50,30 +50,27 @@
 }
 
 .product-info {
-  padding: 12px;
+  padding: 15px;
+  background: #1a1d20;
 }
 
 .product-info h6 {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #fff;
-  margin-bottom: 5px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: #ffffff;
+  margin-bottom: 8px;
 }
 
 .product-info .price {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #0dcaf0;
   font-weight: 700;
 }
 
 /* --- 3. SIDEBAR ORDER DETAILS --- */
 .cart-sidebar {
-  background-color: #2c3034;
-  border: 1px solid #3a3f44;
+  background-color: #1a1d20;
+  border: 1px solid #2d3238;
   border-radius: 15px;
   height: calc(100vh - 140px);
   display: flex;
@@ -89,25 +86,15 @@
 
 .cart-item-row {
   background: transparent;
-  border-bottom: 1px solid #3a3f44;
-}
-
-.cart-item-row:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid #2d3238;
+  padding-bottom: 15px;
 }
 
 /* --- 4. FOOTER & CHECKOUT --- */
 .cart-footer {
   padding: 20px;
-  background-color: #1a1d20;
-  border-top: 1px solid #3a3f44;
-}
-
-.total-price-text {
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: #0dcaf0;
-  text-shadow: 0 0 10px rgba(13, 202, 240, 0.2);
+  background-color: #0f1113;
+  border-top: 1px solid #2d3238;
 }
 
 .btn-pay {
@@ -115,22 +102,13 @@
   color: #000;
   font-weight: 800;
   border: none;
-  padding: 14px;
+  padding: 16px;
   border-radius: 10px;
   width: 100%;
   transition: 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 .btn-pay:hover:not(:disabled) {
   background-color: #fff;
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
-}
-
-/* --- 5. SEARCH BOX --- */
-.search-wrapper .form-control:focus {
-  border-color: #0dcaf0;
-  box-shadow: none;
 }
