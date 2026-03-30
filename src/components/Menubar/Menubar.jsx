@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 const Menubar = () => {
   const navigate = useNavigate();
-  // --- LOGIKA REAKTIF: Ambil data dari Context ---
+  // --- LOGIKA REAKTIF: Ambil data dari Context agar Reaktif ---
   const { setToken, setUserName, userName, settings } = useContext(AppContext);
 
   const role = localStorage.getItem("role");
@@ -22,15 +22,10 @@ const Menubar = () => {
     navigate("/login");
   };
 
-  // --- FUNGSI TUTUP MENU (REFINED) ---
+  // --- FUNGSI TUTUP MENU ---
   const handleClose = () => {
-    // Mencari elemen offcanvas yang sedang terbuka
-    const offcanvasElement = document.getElementById("offcanvasNavbar");
-    if (offcanvasElement) {
-      // Memicu klik pada tombol 'X' asli milik Bootstrap untuk penutupan yang aman
-      const closeBtn = offcanvasElement.querySelector(".btn-close");
-      if (closeBtn) closeBtn.click();
-    }
+    const closeBtn = document.querySelector(".offcanvas-header .btn-close");
+    if (closeBtn) closeBtn.click();
   };
 
   return (
@@ -43,7 +38,6 @@ const Menubar = () => {
             type="button"
             data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasNavbar"
-            aria-controls="offcanvasNavbar"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
@@ -57,14 +51,14 @@ const Menubar = () => {
               className="ms-3 d-flex flex-column"
               style={{ lineHeight: "1.1" }}
             >
-              {/* --- LOGIKA NAMA TOKO DINAMIS --- */}
+              {/* --- LOGIKA NAMA TOKO DINAMIS: TETAP PAKE STYLE SPAN ORIGINAL --- */}
               <span
                 className="fw-bold fs-4 text-white"
                 style={{ letterSpacing: "1px", textTransform: "uppercase" }}
               >
                 {settings?.storeName ? (
                   <>
-                    {/* Jika nama toko lebih dari 4 huruf, pisahkan stylenya */}
+                    {/* Jika nama toko lebih dari 4 huruf, kita bagi warnanya biar gaya Zirocraft tetep dapet */}
                     {settings.storeName.length > 4 ? (
                       <>
                         {settings.storeName.substring(
@@ -111,8 +105,6 @@ const Menubar = () => {
         <div
           className="offcanvas offcanvas-start text-bg-dark"
           id="offcanvasNavbar"
-          tabIndex="-1"
-          aria-labelledby="offcanvasNavbarLabel"
           style={{ maxWidth: "280px" }}
         >
           <div className="offcanvas-header border-bottom border-secondary bg-black bg-opacity-25">
@@ -137,7 +129,6 @@ const Menubar = () => {
               type="button"
               className="btn-close btn-close-white"
               data-bs-dismiss="offcanvas"
-              aria-label="Close"
             ></button>
           </div>
 
@@ -238,7 +229,7 @@ const Menubar = () => {
               )}
             </ul>
 
-            {/* --- WATERMARK SIGNATURE --- */}
+            {/* --- WATERMARK SIGNATURE (BAGIAN YANG TIDAK BOLEH HILANG) --- */}
             <div
               className="p-4 text-center border-top border-secondary mt-auto"
               style={{ background: "rgba(0,0,0,0.1)" }}

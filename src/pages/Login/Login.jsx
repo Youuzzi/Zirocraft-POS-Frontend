@@ -11,7 +11,8 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { setToken, setUserName } = useContext(AppContext); // Ambil setUserName
+  const { setToken, setUserName, setRole, setActiveShift } =
+    useContext(AppContext);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -20,11 +21,15 @@ const Login = () => {
     try {
       const data = await login(email, password);
       if (data && data.token) {
-        // UPDATE GLOBAL STATE (Inilah kuncinya!)
+        // Reset State
+        setActiveShift(null);
+
+        // Simpan ke Context (Reaktif)
         setToken(data.token);
         setUserName(data.name);
+        setRole(data.role); // Set Role di sini!
 
-        toast.success(`Login Berhasil! Selamat datang, ${data.name}.`);
+        toast.success(`Selamat datang, ${data.name}!`);
         navigate("/dashboard");
       }
     } catch (error) {
@@ -44,14 +49,12 @@ const Login = () => {
           </div>
           <p>Silakan login untuk mulai transaksi hari ini</p>
         </div>
-
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
             <label>Email Address</label>
             <input
               type="email"
               className="form-control"
-              placeholder="nama@zirocraft.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -62,7 +65,6 @@ const Login = () => {
             <input
               type="password"
               className="form-control"
-              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -72,12 +74,8 @@ const Login = () => {
             {loading ? "MENGHUBUNGKAN..." : "MASUK KE DASHBOARD"}
           </button>
         </form>
-        <div className="login-footer">
-          <p>BY ZIROCRAFT STUDIO</p>
-        </div>
       </div>
     </div>
   );
 };
-
 export default Login;
