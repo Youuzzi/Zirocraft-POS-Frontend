@@ -6,12 +6,14 @@ import toast from "react-hot-toast";
 
 const Menubar = () => {
   const navigate = useNavigate();
-  const { setToken, setUserName, userName } = useContext(AppContext);
+  // --- LOGIKA REAKTIF: Ambil data dari Context ---
+  const { setToken, setUserName, userName, settings } = useContext(AppContext);
 
   const role = localStorage.getItem("role");
   const userEmail = localStorage.getItem("email") || "user@ziro.com";
   const userInitial = userName ? userName.charAt(0).toUpperCase() : "Z";
 
+  // --- FUNGSI LOGOUT ---
   const handleLogout = () => {
     localStorage.clear();
     setToken(null);
@@ -20,9 +22,15 @@ const Menubar = () => {
     navigate("/login");
   };
 
+  // --- FUNGSI TUTUP MENU (REFINED) ---
   const handleClose = () => {
-    const closeBtn = document.querySelector(".offcanvas-header .btn-close");
-    if (closeBtn) closeBtn.click();
+    // Mencari elemen offcanvas yang sedang terbuka
+    const offcanvasElement = document.getElementById("offcanvasNavbar");
+    if (offcanvasElement) {
+      // Memicu klik pada tombol 'X' asli milik Bootstrap untuk penutupan yang aman
+      const closeBtn = offcanvasElement.querySelector(".btn-close");
+      if (closeBtn) closeBtn.click();
+    }
   };
 
   return (
@@ -35,9 +43,11 @@ const Menubar = () => {
             type="button"
             data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasNavbar"
+            aria-controls="offcanvasNavbar"
           >
             <span className="navbar-toggler-icon"></span>
           </button>
+
           <Link
             to="/dashboard"
             className="navbar-brand d-flex align-items-center me-0"
@@ -47,11 +57,37 @@ const Menubar = () => {
               className="ms-3 d-flex flex-column"
               style={{ lineHeight: "1.1" }}
             >
+              {/* --- LOGIKA NAMA TOKO DINAMIS --- */}
               <span
                 className="fw-bold fs-4 text-white"
-                style={{ letterSpacing: "1px" }}
+                style={{ letterSpacing: "1px", textTransform: "uppercase" }}
               >
-                ZIRO<span style={{ color: "#0dcaf0" }}>SHOP</span>
+                {settings?.storeName ? (
+                  <>
+                    {/* Jika nama toko lebih dari 4 huruf, pisahkan stylenya */}
+                    {settings.storeName.length > 4 ? (
+                      <>
+                        {settings.storeName.substring(
+                          0,
+                          settings.storeName.length - 4,
+                        )}
+                        <span style={{ color: "#0dcaf0" }}>
+                          {settings.storeName.substring(
+                            settings.storeName.length - 4,
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ color: "#0dcaf0" }}>
+                        {settings.storeName}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    ZIRO<span style={{ color: "#0dcaf0" }}>SHOP</span>
+                  </>
+                )}
               </span>
               <span
                 className="text-light opacity-75 fw-bold"
@@ -75,6 +111,8 @@ const Menubar = () => {
         <div
           className="offcanvas offcanvas-start text-bg-dark"
           id="offcanvasNavbar"
+          tabIndex="-1"
+          aria-labelledby="offcanvasNavbarLabel"
           style={{ maxWidth: "280px" }}
         >
           <div className="offcanvas-header border-bottom border-secondary bg-black bg-opacity-25">
@@ -99,6 +137,7 @@ const Menubar = () => {
               type="button"
               className="btn-close btn-close-white"
               data-bs-dismiss="offcanvas"
+              aria-label="Close"
             ></button>
           </div>
 
@@ -131,7 +170,7 @@ const Menubar = () => {
                 </NavLink>
               </li>
 
-              {/* LOGIKA: Hanya tampilkan Management jika login sebagai ADMIN */}
+              {/* LOGIKA ROLE ADMIN */}
               {role === "ROLE_ADMIN" && (
                 <>
                   <li className="nav-item">
@@ -143,7 +182,6 @@ const Menubar = () => {
                   >
                     MANAGEMENT
                   </div>
-
                   <li className="nav-item">
                     <NavLink
                       to="/category"
@@ -157,7 +195,6 @@ const Menubar = () => {
                       <i className="bi bi-grid me-2"></i> Categories
                     </NavLink>
                   </li>
-
                   <li className="nav-item">
                     <NavLink
                       to="/items"
@@ -171,7 +208,6 @@ const Menubar = () => {
                       <i className="bi bi-box-seam me-2"></i> Products
                     </NavLink>
                   </li>
-
                   <li className="nav-item">
                     <NavLink
                       to="/users"
@@ -185,8 +221,6 @@ const Menubar = () => {
                       <i className="bi bi-people me-2"></i> Users
                     </NavLink>
                   </li>
-
-                  {/* --- MENU BARU: SETTINGS (ADMIN ONLY) --- */}
                   <li className="nav-item">
                     <NavLink
                       to="/settings"
