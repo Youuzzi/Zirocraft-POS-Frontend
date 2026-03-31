@@ -11,6 +11,16 @@ import { processCheckout } from "../../Service/OrderService";
 import Receipt from "../../components/Receipt/Receipt";
 import toast from "react-hot-toast";
 
+// --- FUNGSI FORMAT MATA UANG ---
+const formatIDR = (value) => {
+  if (!value || isNaN(value)) return "Rp 0";
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(value);
+};
+
 const Explore = () => {
   const {
     products,
@@ -22,29 +32,33 @@ const Explore = () => {
     isDataLoaded,
   } = useContext(AppContext);
 
-  // --- STATE KASIR ---
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-
-  // --- STATE MODAL ---
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-
-  // --- STATE STRUK (SNAPSHOT LOGIC) ---
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrderData, setLastOrderData] = useState(null);
 
-  // --- STATE TRANSAKSI ---
   const [customerName, setCustomerName] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [cashReceived, setCashReceived] = useState("");
   const [actualCash, setActualCash] = useState("");
   const [expenseData, setExpenseData] = useState({ desc: "", amount: "" });
   const [loading, setLoading] = useState(false);
+  const [openingInput, setOpeningInput] = useState("");
 
-  // --- LOGIC CART ---
+  // --- LOGIC BARU: PAYMENT TYPE & TAX ---
+  const [paymentType, setPaymentType] = useState("CASH");
+
+  // Kalkulasi Pajak Standar Resto
+  const subTotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const serviceCharge = Math.round(subTotal * 0.05); // 5%
+  const taxAmount = Math.round((subTotal + serviceCharge) * 0.11); // 11%
+  const grandTotal = subTotal + serviceCharge + taxAmount;
+  const changeAmount = cashReceived ? cashReceived - grandTotal : 0;
+
   const addToCart = (product) => {
     if (product.stock <= 0) return toast.error("Stok habis!");
     const exist = cart.find((i) => i.itemId === product.itemId);
@@ -56,15 +70,15 @@ const Explore = () => {
       );
     else setCart([...cart, { ...product, qty: 1 }]);
   };
+
   const updateQty = (id, delta) =>
     setCart(
       cart.map((i) =>
         i.itemId === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i,
       ),
     );
+
   const removeItem = (id) => setCart(cart.filter((i) => i.itemId !== id));
-  const totalPrice = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const changeAmount = cashReceived ? cashReceived - totalPrice : 0;
 
   const filteredProducts = products.filter(
     (p) =>
@@ -72,17 +86,20 @@ const Explore = () => {
       (selectedCategory === "All" || p.categoryName === selectedCategory),
   );
 
-  // --- HANDLER: CHECKOUT (FIXED LOGIC) ---
   const handleFinalCheckout = async (e) => {
     e.preventDefault();
-    if (cashReceived < totalPrice) return toast.error("Uang kurang!");
+    const currentGrandTotal = grandTotal;
+
+    if (paymentType === "CASH" && cashReceived < currentGrandTotal) {
+      return toast.error("Uang kurang!");
+    }
 
     setLoading(true);
     const orderData = {
       customerName,
       tableNumber,
-      totalAmount: totalPrice,
-      paymentType: "CASH",
+      totalAmount: currentGrandTotal,
+      paymentType,
       items: cart.map((i) => ({ name: i.name, price: i.price, qty: i.qty })),
     };
 
@@ -94,46 +111,29 @@ const Explore = () => {
       );
 
       if (res.data) {
-        // --- LOGIKA JAHIT DATA (DATA DB + DATA INPUT) ---
-        // Kita gabungkan data dari Server (id, orderNumber, queueNumber, items dari DB)
-        // dengan data yang cuma ada di Frontend (cashReceived, changeAmount)
-        const snapshotForReceipt = {
-          ...res.data, // Data resmi dari DB
-          cash: cashReceived, // Data inputan (Transient)
-          change: changeAmount, // Data kalkulasi (Transient)
-          // Format tanggal agar seragam
-          date: new Date(res.data.createdAt).toLocaleString("id-ID", {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }),
-        };
+        setLastOrderData({
+          ...res.data,
+          cash: paymentType === "QRIS" ? currentGrandTotal : cashReceived,
+          change: paymentType === "QRIS" ? 0 : cashReceived - currentGrandTotal,
+          date: new Date().toLocaleString("id-ID"),
+        });
 
-        // 1. Set snapshot data lengkap untuk Receipt
-        setLastOrderData(snapshotForReceipt);
-
-        // 2. MUNCULKAN STRUK
         setShowReceipt(true);
-
-        // 3. BERSIHKAN KASIR & TUTUP MODAL
         setCart([]);
         setCustomerName("");
         setTableNumber("");
         setCashReceived("");
         setShowCheckoutModal(false);
-
-        // 4. Sinkronisasi stok produk secara global
         loadData();
         toast.success("Transaksi Berhasil!");
       }
     } catch (err) {
-      console.error("Checkout Error:", err);
       toast.error("Gagal memproses pembayaran.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HANDLERS: SHIFT & EXPENSE ---
   const handleStartShift = async (e) => {
     e.preventDefault();
     const val = e.target.opening.value;
@@ -193,7 +193,6 @@ const Explore = () => {
     }
   };
 
-  // --- SENSOR LOADING ---
   if (!isDataLoaded)
     return (
       <div className="pos-container d-flex align-items-center justify-content-center">
@@ -201,7 +200,6 @@ const Explore = () => {
       </div>
     );
 
-  // --- GEMBOK SHIFT ---
   if (!activeShift || !activeShift.id || activeShift.status !== "OPEN") {
     return (
       <div
@@ -232,10 +230,14 @@ const Explore = () => {
             <input
               name="opening"
               type="number"
-              className="form-control form-control-lg bg-dark text-white text-center mb-3"
+              className="form-control form-control-lg bg-dark text-white text-center mb-1"
               placeholder="0"
+              onChange={(e) => setOpeningInput(e.target.value)}
               required
             />
+            <div className="text-info small fw-bold text-center mb-3">
+              Konfirmasi: {formatIDR(openingInput)}
+            </div>
             <button
               type="submit"
               className="btn btn-info w-100 fw-bold py-3 shadow"
@@ -250,7 +252,6 @@ const Explore = () => {
 
   return (
     <div className="pos-container text-light">
-      {/* 1. REAL-TIME RECEIPT MODAL */}
       {showReceipt && lastOrderData && (
         <Receipt
           orderData={lastOrderData}
@@ -259,7 +260,6 @@ const Explore = () => {
         />
       )}
 
-      {/* 2. MODAL CHECKOUT */}
       {showCheckoutModal && (
         <div
           className="modal fade show d-block"
@@ -308,31 +308,79 @@ const Explore = () => {
                       />
                     </div>
                   </div>
-                  <div className="p-3 bg-secondary bg-opacity-10 rounded mb-3 text-start">
+
+                  <div className="d-flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentType("CASH")}
+                      className={`btn w-100 fw-bold ${
+                        paymentType === "CASH"
+                          ? "btn-info"
+                          : "btn-outline-secondary text-light"
+                      }`}
+                    >
+                      CASH
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentType("QRIS")}
+                      className={`btn w-100 fw-bold ${
+                        paymentType === "QRIS"
+                          ? "btn-info"
+                          : "btn-outline-secondary text-light"
+                      }`}
+                    >
+                      QRIS / DEBIT
+                    </button>
+                  </div>
+
+                  <div
+                    className="p-3 bg-secondary bg-opacity-10 rounded mb-3 text-start"
+                    style={{ fontSize: "13px" }}
+                  >
                     <div className="d-flex justify-content-between mb-1">
-                      <span>Tagihan:</span>
+                      <span>Subtotal:</span>
                       <span className="fw-bold">
-                        Rp {totalPrice.toLocaleString()}
+                        Rp {subTotal.toLocaleString()}
                       </span>
                     </div>
-                    <div className="d-flex justify-content-between text-info">
-                      <span>Kembali:</span>
+                    <div className="d-flex justify-content-between mb-1 opacity-75">
+                      <span>Service (5%):</span>
+                      <span>Rp {serviceCharge.toLocaleString()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-1 opacity-75">
+                      <span>Tax (11%):</span>
+                      <span>Rp {taxAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between text-info border-top border-secondary pt-2 mt-2">
+                      <span className="fw-bold">GRAND TOTAL:</span>
                       <span className="fw-bold fs-5">
-                        Rp {changeAmount.toLocaleString()}
+                        Rp {grandTotal.toLocaleString()}
                       </span>
                     </div>
                   </div>
-                  <label className="small fw-bold text-secondary mb-2 text-uppercase">
-                    UANG TUNAI (RP)
-                  </label>
-                  <input
-                    type="number"
-                    className="form-control bg-black text-white border-secondary fs-3 py-3 text-center"
-                    value={cashReceived}
-                    onChange={(e) => setCashReceived(e.target.value)}
-                    required
-                    autoFocus
-                  />
+
+                  {paymentType === "CASH" && (
+                    <>
+                      <label className="small fw-bold text-secondary mb-2 text-uppercase">
+                        UANG TUNAI (RP)
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control bg-black text-white border-secondary fs-3 py-3 text-center mb-1"
+                        value={cashReceived}
+                        onChange={(e) => setCashReceived(e.target.value)}
+                        required
+                        autoFocus
+                      />
+                      <div className="text-info small fw-bold text-center mb-1">
+                        Terinput: {formatIDR(cashReceived)}
+                      </div>
+                      <div className="text-warning small fw-bold text-center mb-3">
+                        Kembali: {formatIDR(changeAmount)}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="modal-footer border-secondary">
                   <button
@@ -345,7 +393,10 @@ const Explore = () => {
                   <button
                     type="submit"
                     className="btn btn-info fw-bold px-4"
-                    disabled={loading || cashReceived < totalPrice}
+                    disabled={
+                      loading ||
+                      (paymentType === "CASH" && cashReceived < grandTotal)
+                    }
                   >
                     BAYAR
                   </button>
@@ -356,14 +407,16 @@ const Explore = () => {
         </div>
       )}
 
-      {/* MODAL EXPENSE */}
       {showExpenseModal && (
         <div
           className="modal fade show d-block"
           style={{ background: "rgba(0,0,0,0.8)" }}
         >
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content bg-dark border-secondary text-light">
+            <div
+              className="modal-content bg-dark border-secondary text-light shadow-lg"
+              style={{ borderRadius: "15px" }}
+            >
               <div className="modal-header border-secondary">
                 <h5 className="fw-bold m-0 text-warning">CATAT PENGELUARAN</h5>
                 <button
@@ -372,9 +425,9 @@ const Explore = () => {
                 ></button>
               </div>
               <form onSubmit={handleSaveExpense}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="small fw-bold text-secondary">
+                <div className="modal-body p-4">
+                  <div className="mb-3 text-start">
+                    <label className="small fw-bold text-secondary mb-2">
                       DESKRIPSI
                     </label>
                     <input
@@ -388,13 +441,13 @@ const Explore = () => {
                       required
                     />
                   </div>
-                  <div className="mb-3">
-                    <label className="small fw-bold text-secondary">
+                  <div className="mb-3 text-start">
+                    <label className="small fw-bold text-secondary mb-2">
                       NOMINAL (RP)
                     </label>
                     <input
                       type="number"
-                      className="form-control bg-black text-white border-secondary"
+                      className="form-control bg-black text-white border-secondary fs-4 py-2 mb-1"
                       value={expenseData.amount}
                       onChange={(e) =>
                         setExpenseData({
@@ -404,12 +457,15 @@ const Explore = () => {
                       }
                       required
                     />
+                    <div className="text-warning small fw-bold text-center mt-2">
+                      Konfirmasi: {formatIDR(expenseData.amount)}
+                    </div>
                   </div>
                 </div>
                 <div className="modal-footer border-secondary">
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn btn-secondary px-4"
                     onClick={() => setShowExpenseModal(false)}
                   >
                     BATAL
@@ -427,18 +483,18 @@ const Explore = () => {
         </div>
       )}
 
-      {/* MODAL CLOSE SHIFT */}
       {showCloseModal && (
         <div
           className="modal fade show d-block"
           style={{ background: "rgba(0,0,0,0.8)" }}
         >
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content bg-dark border-secondary text-light">
+            <div
+              className="modal-content bg-dark border-secondary text-light shadow-lg"
+              style={{ borderRadius: "20px" }}
+            >
               <div className="modal-header border-secondary">
-                <h5 className="fw-bold m-0 text-danger">
-                  CLOSE SESSION (BLIND CLOSING)
-                </h5>
+                <h5 className="fw-bold m-0 text-danger">CLOSE SESSION</h5>
                 <button
                   className="btn-close btn-close-white"
                   onClick={() => setShowCloseModal(false)}
@@ -447,11 +503,10 @@ const Explore = () => {
               <form onSubmit={handleEndShift}>
                 <div className="modal-body p-4 text-center">
                   <p className="text-secondary small">
-                    Hitung semua uang fisik di laci saat ini dan masukkan
-                    nominalnya di bawah ini.
+                    Input total uang fisik di laci.
                   </p>
                   <label className="small fw-bold text-secondary mb-2">
-                    TOTAL UANG FISIK (RP)
+                    TOTAL FISIK (RP)
                   </label>
                   <input
                     type="number"
@@ -459,7 +514,6 @@ const Explore = () => {
                     value={actualCash}
                     onChange={(e) => setActualCash(e.target.value)}
                     required
-                    placeholder="0"
                   />
                 </div>
                 <div className="modal-footer border-secondary">
@@ -468,10 +522,10 @@ const Explore = () => {
                     className="btn btn-secondary"
                     onClick={() => setShowCloseModal(false)}
                   >
-                    KEMBALI
+                    BATAL
                   </button>
                   <button type="submit" className="btn btn-danger fw-bold px-4">
-                    TUTUP SHIFT & KELUAR
+                    TUTUP SHIFT
                   </button>
                 </div>
               </form>
@@ -480,59 +534,43 @@ const Explore = () => {
         </div>
       )}
 
-      {/* MAIN UI KASIR */}
       <div className="row g-4">
         <div className="col-lg-8">
           <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
             <div className="page-title-section">
               <div className="d-flex align-items-center gap-3 mb-2">
-                <h2
-                  className="fw-bold m-0 text-white"
-                  style={{ letterSpacing: "1px" }}
-                >
+                <h2 className="fw-bold m-0 text-white">
                   <i className="bi bi-cash-stack me-2 text-info"></i> CASHIER
                 </h2>
-                <span
-                  className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25"
-                  style={{ fontSize: "10px", padding: "5px 12px" }}
-                >
+                <span className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25">
                   ● SHIFT ACTIVE
                 </span>
               </div>
               <div className="d-flex align-items-center gap-2">
-                <span
-                  className="text-secondary fw-bold"
-                  style={{ fontSize: "10px", letterSpacing: "2px" }}
-                >
+                <span className="text-secondary fw-bold small">
                   {settings?.storeName?.toUpperCase() || "ZIROSHOP"} POS
                 </span>
                 <button
                   className="btn btn-sm rounded-pill ms-2"
                   style={{
                     fontSize: "10px",
-                    fontWeight: "800",
                     background: "rgba(255, 193, 7, 0.1)",
                     color: "#ffc107",
-                    border: "1px solid rgba(255, 193, 7, 0.2)",
-                    padding: "2px 10px",
                   }}
                   onClick={() => setShowExpenseModal(true)}
                 >
-                  <i className="bi bi-wallet2 me-1"></i> PENGELUARAN
+                  PENGELUARAN
                 </button>
                 <button
                   className="btn btn-sm rounded-pill ms-1"
                   style={{
                     fontSize: "10px",
-                    fontWeight: "800",
                     background: "rgba(220, 53, 69, 0.1)",
                     color: "#dc3545",
-                    border: "1px solid rgba(220, 53, 69, 0.2)",
-                    padding: "2px 10px",
                   }}
                   onClick={() => setShowCloseModal(true)}
                 >
-                  <i className="bi bi-power me-1"></i> AKHIRI SHIFT
+                  AKHIRI SHIFT
                 </button>
               </div>
             </div>
@@ -551,12 +589,10 @@ const Explore = () => {
               </div>
             </div>
           </div>
-
           <CategoryList
             onSelect={setSelectedCategory}
             active={selectedCategory}
           />
-
           <div className="product-grid mt-4">
             {filteredProducts.map((item) => (
               <div
@@ -564,10 +600,7 @@ const Explore = () => {
                 className="product-card"
                 onClick={() => item.stock > 0 && addToCart(item)}
               >
-                <div
-                  className="product-img-box"
-                  style={{ position: "relative" }}
-                >
+                <div className="product-img-box">
                   {item.imgUrl ? (
                     <img src={item.imgUrl} alt={item.name} />
                   ) : (
@@ -607,19 +640,13 @@ const Explore = () => {
             ))}
           </div>
         </div>
-
         <div className="col-lg-4">
           <div
             className="cart-sidebar shadow-lg sticky-top"
             style={{ top: "90px" }}
           >
             <div className="p-4 border-bottom border-secondary bg-black bg-opacity-10 d-flex justify-content-between align-items-center">
-              <h5
-                className="fw-bold m-0 text-white"
-                style={{ letterSpacing: "1px" }}
-              >
-                ORDER DETAILS
-              </h5>
+              <h5 className="fw-bold m-0 text-white">ORDER DETAILS</h5>
               <span className="badge rounded-pill bg-info text-dark px-3 fw-bold">
                 {cart.length} ITEMS
               </span>
@@ -627,7 +654,7 @@ const Explore = () => {
             <div className="cart-items-container">
               {cart.map((item) => (
                 <div key={item.itemId} className="cart-item-row p-3">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div className="d-flex justify-content-between mb-2">
                     <div style={{ flex: 1 }}>
                       <h6 className="m-0 fw-bold text-white text-truncate">
                         {item.name}
@@ -647,10 +674,7 @@ const Explore = () => {
                     <div className="d-flex align-items-center bg-dark rounded-pill border border-secondary px-2 py-1">
                       <button
                         className="btn btn-sm text-info fw-bold px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQty(item.itemId, -1);
-                        }}
+                        onClick={() => updateQty(item.itemId, -1)}
                       >
                         -
                       </button>
@@ -659,10 +683,7 @@ const Explore = () => {
                       </span>
                       <button
                         className="btn btn-sm text-info fw-bold px-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateQty(item.itemId, 1);
-                        }}
+                        onClick={() => updateQty(item.itemId, 1)}
                       >
                         +
                       </button>
@@ -675,10 +696,34 @@ const Explore = () => {
               ))}
             </div>
             <div className="cart-footer p-4">
+              <div className="mb-3 border-bottom border-secondary border-opacity-25 pb-3">
+                <div
+                  className="d-flex justify-content-between text-secondary mb-1"
+                  style={{ fontSize: "12px" }}
+                >
+                  <span>Subtotal</span>
+                  <span>Rp {subTotal.toLocaleString()}</span>
+                </div>
+                <div
+                  className="d-flex justify-content-between text-secondary mb-1"
+                  style={{ fontSize: "11px", opacity: 0.7 }}
+                >
+                  <span>Service (5%)</span>
+                  <span>Rp {serviceCharge.toLocaleString()}</span>
+                </div>
+                <div
+                  className="d-flex justify-content-between text-secondary"
+                  style={{ fontSize: "11px", opacity: 0.7 }}
+                >
+                  <span>PPN (11%)</span>
+                  <span>Rp {taxAmount.toLocaleString()}</span>
+                </div>
+              </div>
+
               <div className="d-flex justify-content-between mb-4 align-items-center">
                 <span className="fw-bold text-white">TOTAL BILL</span>
                 <span className="total-price-text">
-                  Rp {totalPrice.toLocaleString()}
+                  Rp {grandTotal.toLocaleString()}
                 </span>
               </div>
               <button

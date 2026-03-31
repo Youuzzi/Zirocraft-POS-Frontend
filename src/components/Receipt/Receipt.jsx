@@ -4,27 +4,18 @@ import "./Receipt.css";
 const Receipt = ({ orderData, settings, onClose }) => {
   if (!orderData) return null;
 
-  // --- SINKRONISASI DATA (FIXED LOGIC) ---
-  // Menghitung total qty item secara dinamis (handle itemName & quantity dari DB)
   const totalItems =
     orderData.items?.reduce(
       (acc, item) => acc + (item.quantity || item.qty || 0),
       0,
     ) || 0;
 
-  // Nama Kasir dari Storage
   const cashierName = (localStorage.getItem("name") || "Admin").toUpperCase();
-
-  // Nama Toko Uppercase
   const storeNameDisplay = (settings?.storeName || "ZIROSHOP").toUpperCase();
-
-  // Format Nomor Antrean: Gunakan queueNumber dari DB
   const queueNumberDisplay = String(orderData.queueNumber || 1).padStart(
     3,
     "0",
   );
-
-  // LOGIK TANGGAL: Prioritaskan date dari Snapshot, fallback ke createdAt
   const displayDate =
     orderData.date ||
     (orderData.createdAt
@@ -39,9 +30,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
 
   return (
     <div className="receipt-overlay">
-      {/* ========================================================
-          BAGIAN 1: DIGITAL VIEW (PREMIUM CARD - FULL INFO)
-          ======================================================== */}
       <div className="digital-receipt-card no-print animate__animated animate__fadeInUp">
         <div className="receipt-content-scroll">
           {/* HEADER */}
@@ -65,9 +53,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
             <h4 style={{ fontWeight: "800", margin: 0 }}>{storeNameDisplay}</h4>
             <p style={{ fontSize: "11px", color: "#888", margin: "4px 0" }}>
               Pandeglang, Banten
-            </p>
-            <p style={{ fontSize: "10px", color: "#888", margin: "0" }}>
-              IG: @yoozev_ | WA: 0812-XXXX
             </p>
           </div>
 
@@ -93,7 +78,7 @@ const Receipt = ({ orderData, settings, onClose }) => {
             </span>
             <h1
               style={{
-                fontSize: "48px",
+                fontSize: "56px",
                 fontWeight: "900",
                 color: "#1a1a1a",
                 margin: "5px 0",
@@ -128,8 +113,9 @@ const Receipt = ({ orderData, settings, onClose }) => {
                 <div
                   style={{
                     fontSize: "11px",
-                    fontWeight: "800",
-                    color: "#0dcaf0",
+                    fontWeight: "900",
+                    color: "#198754",
+                    letterSpacing: "1px",
                   }}
                 >
                   {orderData.status === "COMPLETED" ||
@@ -148,18 +134,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
                 <small style={{ color: "#888", fontSize: "10px" }}>KASIR</small>
                 <div style={{ fontSize: "11px", fontWeight: "700" }}>
                   {cashierName}
-                </div>
-              </div>
-              <div>
-                <small style={{ color: "#888", fontSize: "10px" }}>MEJA</small>
-                <div style={{ fontSize: "11px", fontWeight: "700" }}>
-                  {orderData.tableNumber || "-"}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <small style={{ color: "#888", fontSize: "10px" }}>CUST</small>
-                <div style={{ fontSize: "11px", fontWeight: "800" }}>
-                  {orderData.customerName?.toUpperCase() || "CUSTOMER"}
                 </div>
               </div>
             </div>
@@ -220,53 +194,130 @@ const Receipt = ({ orderData, settings, onClose }) => {
             </div>
           </div>
 
-          {/* FINANCIALS */}
-          <div style={{ borderTop: "2px solid #f8f9fa", paddingTop: "15px" }}>
+          {/* FINANCIALS BREAKDOWN */}
+          <div
+            style={{
+              borderTop: "2px solid #f8f9fa",
+              paddingTop: "15px",
+              paddingBottom: "10px",
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
+                fontSize: "12px",
+                color: "#666",
+                marginBottom: "4px",
+              }}
+            >
+              <span>Subtotal</span>
+              <span>
+                Rp{" "}
+                {(
+                  orderData.subTotal ||
+                  orderData.totalAmount -
+                    (orderData.taxAmount || 0) -
+                    (orderData.serviceCharge || 0)
+                ).toLocaleString()}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+                color: "#888",
+                marginBottom: "4px",
+              }}
+            >
+              <span>Service (5%)</span>
+              <span>
+                Rp {Number(orderData.serviceCharge || 0).toLocaleString()}
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+                color: "#888",
                 marginBottom: "8px",
               }}
             >
-              <span style={{ fontSize: "14px", fontWeight: "700" }}>
-                TOTAL BILL
+              <span>PPN (11%)</span>
+              <span>
+                Rp {Number(orderData.taxAmount || 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "10px",
+                alignItems: "center",
+                borderTop: "1px dashed #eee",
+                paddingTop: "10px",
+              }}
+            >
+              <span
+                style={{ fontSize: "13px", fontWeight: "700", color: "#444" }}
+              >
+                GRAND TOTAL
               </span>
               <span
                 style={{
-                  fontSize: "18px",
+                  fontSize: "22px",
                   fontWeight: "900",
                   color: "#0dcaf0",
+                  textShadow: "0px 1px 2px rgba(13, 202, 240, 0.1)",
                 }}
               >
                 Rp {orderData.totalAmount?.toLocaleString()}
               </span>
             </div>
+
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: "12px",
-                color: "#666",
+                color: "#888",
+                marginBottom: "5px",
               }}
             >
-              <span>Tunai</span>{" "}
-              <span>Rp {Number(orderData.cash || 0).toLocaleString()}</span>
+              <span>Bayar ({orderData.paymentType || "CASH"})</span>
+              <span style={{ fontWeight: "600", color: "#444" }}>
+                Rp {Number(orderData.cash || 0).toLocaleString()}
+              </span>
             </div>
+
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                fontSize: "12px",
-                color: "#666",
+                fontSize: "13px",
+                marginTop: "5px",
+                paddingTop: "5px",
+                borderTop: "1px dashed #eee",
               }}
             >
-              <span>Kembalian</span>{" "}
-              <span>Rp {orderData.change?.toLocaleString() || 0}</span>
+              <span style={{ fontWeight: "700", color: "#444" }}>
+                KEMBALIAN
+              </span>
+              <span
+                style={{
+                  fontWeight: "900",
+                  color: "#f39c12",
+                  fontSize: "15px",
+                }}
+              >
+                Rp {orderData.change?.toLocaleString() || 0}
+              </span>
             </div>
           </div>
 
-          {/* QR SECTION */}
           <div style={{ textAlign: "center", margin: "25px 0" }}>
             <div
               style={{
@@ -297,7 +348,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
             </p>
           </div>
 
-          {/* FOOTER POLICIES */}
           <div style={{ textAlign: "center", fontSize: "10px", color: "#aaa" }}>
             <p style={{ margin: 0 }}>* Barang yang sudah dibeli *</p>
             <p style={{ margin: 0 }}>* tidak dapat dikembalikan *</p>
@@ -342,18 +392,13 @@ const Receipt = ({ orderData, settings, onClose }) => {
         </div>
       </div>
 
-      {/* ========================================================
-          BAGIAN 2: THERMAL VIEW (CENTER ON PRINT)
-          ======================================================== */}
+      {/* THERMAL VIEW */}
       <div id="ziro-thermal-receipt">
         <div style={{ textAlign: "center" }}>
           <h3 style={{ margin: "0", fontSize: "14pt", fontWeight: "bold" }}>
             {storeNameDisplay}
           </h3>
           <p style={{ margin: "2px 0", fontSize: "8pt" }}>Pandeglang, Banten</p>
-          <p style={{ margin: "0", fontSize: "7pt" }}>
-            IG: @yoozev_ | WA: 0812-XXXX
-          </p>
           <div style={dashedLine}></div>
           <p style={{ margin: "5px 0 0 0", fontSize: "9pt" }}>NO. ANTREAN</p>
           <h1 style={{ margin: "0", fontSize: "32pt", fontWeight: "bold" }}>
@@ -375,15 +420,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
           <div className="thermal-flex">
             <span>Kasir :</span> <span>{cashierName}</span>
           </div>
-          <div className="thermal-flex">
-            <span>Meja :</span> <span>{orderData.tableNumber || "-"}</span>
-          </div>
-          <div className="thermal-flex">
-            <span>Cust :</span>{" "}
-            <span style={{ fontWeight: "bold" }}>
-              {orderData.customerName?.toUpperCase() || "CUSTOMER"}
-            </span>
-          </div>
           <div style={dashedLine}></div>
         </div>
 
@@ -391,7 +427,7 @@ const Receipt = ({ orderData, settings, onClose }) => {
           {orderData.items?.map((item, index) => (
             <div key={index} style={{ marginBottom: "6px" }}>
               <div style={{ textTransform: "uppercase", fontWeight: "bold" }}>
-                {item.itemName || item.name || "MENU"}
+                {item.itemName || item.name}
               </div>
               <div className="thermal-flex">
                 <span>
@@ -400,71 +436,58 @@ const Receipt = ({ orderData, settings, onClose }) => {
                 </span>
                 <span>
                   {(
-                    item.subTotal || item.price * (item.quantity || item.qty)
+                    (item.quantity || item.qty) * (item.price || 0)
                   ).toLocaleString()}
                 </span>
               </div>
             </div>
           ))}
-          <div className="thermal-flex" style={{ marginTop: "5px" }}>
-            <span>TOTAL ITEM:</span> <span>{totalItems}</span>
-          </div>
           <div style={dashedLine}></div>
-        </div>
 
-        <div style={{ fontSize: "10pt" }}>
-          <div className="thermal-flex" style={{ fontWeight: "bold" }}>
-            <span>TOTAL BILL:</span>{" "}
-            <span>Rp {orderData.totalAmount?.toLocaleString()}</span>
+          <div className="thermal-flex">
+            <span>Subtotal:</span>{" "}
+            <span>Rp {Number(orderData.subTotal || 0).toLocaleString()}</span>
           </div>
           <div className="thermal-flex">
-            <span>Tunai :</span>{" "}
-            <span>{Number(orderData.cash || 0).toLocaleString()}</span>
+            <span>Service (5%):</span>{" "}
+            <span>
+              Rp {Number(orderData.serviceCharge || 0).toLocaleString()}
+            </span>
           </div>
+          <div className="thermal-flex">
+            <span>PPN (11%):</span>{" "}
+            <span>Rp {Number(orderData.taxAmount || 0).toLocaleString()}</span>
+          </div>
+
+          <div
+            className="thermal-flex"
+            style={{ fontWeight: "bold", fontSize: "10pt", marginTop: "5px" }}
+          >
+            <span>GRAND TOTAL:</span>{" "}
+            <span>
+              Rp {Number(orderData.totalAmount || 0).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="thermal-flex">
+            <span>Bayar ({orderData.paymentType || "CASH"}):</span>
+            <span>Rp {Number(orderData.cash || 0).toLocaleString()}</span>
+          </div>
+
           <div className="thermal-flex" style={{ fontWeight: "bold" }}>
-            <span>Kembali :</span>{" "}
-            <span>{orderData.change?.toLocaleString() || 0}</span>
+            <span>Kembali:</span>{" "}
+            <span>Rp {Number(orderData.change || 0).toLocaleString()}</span>
           </div>
         </div>
 
         <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            margin: "20px 0",
-          }}
+          style={{ textAlign: "center", fontSize: "7pt", marginTop: "20px" }}
         >
-          <div
-            style={{
-              width: "30mm",
-              height: "30mm",
-              border: "1px solid #000",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "7pt",
-              textAlign: "center",
-            }}
-          >
-            QR VERIFICATION
-          </div>
-        </div>
-
-        <div style={{ textAlign: "center", fontSize: "7pt" }}>
-          <p style={{ margin: 0, fontSize: "7pt" }}>
-            Scan untuk riwayat pesanan
-          </p>
-          <div style={dashedLine}></div>
-          <p style={{ margin: 0 }}>* Barang yang sudah dibeli *</p>
-          <p style={{ margin: 0 }}>* tidak dapat dikembalikan *</p>
-          <p style={{ marginTop: "10px", fontSize: "9pt", fontWeight: "bold" }}>
-            TERIMA KASIH
-          </p>
-          <p style={{ fontSize: "6pt", opacity: 0.5, marginTop: "5px" }}>
+          <p style={{ margin: 0 }}>TERIMA KASIH</p>
+          <p style={{ fontSize: "6pt", opacity: 0.5 }}>
             Powered by Zirocraft Studio
           </p>
         </div>
-        <div style={{ height: "40px" }}></div>
       </div>
     </div>
   );
