@@ -4,11 +4,11 @@ import "./Receipt.css";
 const Receipt = ({ orderData, settings, onClose }) => {
   if (!orderData) return null;
 
-  // --- SINKRONISASI DATA (SINGLE SOURCE) ---
-  // Menghitung total qty item secara dinamis
+  // --- SINKRONISASI DATA (FIXED LOGIC) ---
+  // Menghitung total qty item secara dinamis (handle itemName & quantity dari DB)
   const totalItems =
     orderData.items?.reduce(
-      (acc, item) => acc + (item.quantity || item.qty),
+      (acc, item) => acc + (item.quantity || item.qty || 0),
       0,
     ) || 0;
 
@@ -18,11 +18,18 @@ const Receipt = ({ orderData, settings, onClose }) => {
   // Nama Toko Uppercase
   const storeNameDisplay = (settings?.storeName || "ZIROSHOP").toUpperCase();
 
-  // Format Nomor Antrean: Ambil dari server (misal 1 jadi 001)
+  // Format Nomor Antrean: Gunakan queueNumber dari DB
   const queueNumberDisplay = String(orderData.queueNumber || 1).padStart(
     3,
     "0",
   );
+
+  // LOGIK TANGGAL: Prioritaskan date dari Snapshot, fallback ke createdAt
+  const displayDate =
+    orderData.date ||
+    (orderData.createdAt
+      ? new Date(orderData.createdAt).toLocaleString("id-ID")
+      : "-");
 
   const handlePrint = () => {
     window.print();
@@ -134,7 +141,7 @@ const Receipt = ({ orderData, settings, onClose }) => {
               <div>
                 <small style={{ color: "#888", fontSize: "10px" }}>WAKTU</small>
                 <div style={{ fontSize: "11px", fontWeight: "700" }}>
-                  {orderData.date}
+                  {displayDate}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -177,16 +184,18 @@ const Receipt = ({ orderData, settings, onClose }) => {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "13px", fontWeight: "700" }}>
-                      {(item.itemName || item.name).toUpperCase()}
+                      {(item.itemName || item.name || "MENU").toUpperCase()}
                     </div>
                     <div style={{ fontSize: "11px", color: "#888" }}>
                       {item.quantity || item.qty} x Rp{" "}
-                      {item.price.toLocaleString()}
+                      {(item.price || 0).toLocaleString()}
                     </div>
                   </div>
                   <div style={{ fontSize: "13px", fontWeight: "700" }}>
                     Rp{" "}
-                    {(item.subTotal || item.qty * item.price).toLocaleString()}
+                    {(
+                      item.subTotal || item.price * (item.quantity || item.qty)
+                    ).toLocaleString()}
                   </div>
                 </div>
               ))}
@@ -308,7 +317,6 @@ const Receipt = ({ orderData, settings, onClose }) => {
           </div>
         </div>
 
-        {/* BUTTON ACTIONS */}
         <div
           style={{
             padding: "20px 25px",
@@ -335,7 +343,7 @@ const Receipt = ({ orderData, settings, onClose }) => {
       </div>
 
       {/* ========================================================
-          BAGIAN 2: THERMAL VIEW (HIDDEN ON SCREEN - AUTO CENTER ON PRINT)
+          BAGIAN 2: THERMAL VIEW (CENTER ON PRINT)
           ======================================================== */}
       <div id="ziro-thermal-receipt">
         <div style={{ textAlign: "center" }}>
@@ -362,7 +370,7 @@ const Receipt = ({ orderData, settings, onClose }) => {
             <span>STATUS :</span> <span>LUNAS / PAID</span>
           </div>
           <div className="thermal-flex">
-            <span>Waktu :</span> <span>{orderData.date}</span>
+            <span>Waktu :</span> <span>{displayDate}</span>
           </div>
           <div className="thermal-flex">
             <span>Kasir :</span> <span>{cashierName}</span>
@@ -383,14 +391,17 @@ const Receipt = ({ orderData, settings, onClose }) => {
           {orderData.items?.map((item, index) => (
             <div key={index} style={{ marginBottom: "6px" }}>
               <div style={{ textTransform: "uppercase", fontWeight: "bold" }}>
-                {item.itemName || item.name}
+                {item.itemName || item.name || "MENU"}
               </div>
               <div className="thermal-flex">
                 <span>
-                  {item.quantity || item.qty} x {item.price.toLocaleString()}
+                  {item.quantity || item.qty} x{" "}
+                  {(item.price || 0).toLocaleString()}
                 </span>
                 <span>
-                  {(item.subTotal || item.qty * item.price).toLocaleString()}
+                  {(
+                    item.subTotal || item.price * (item.quantity || item.qty)
+                  ).toLocaleString()}
                 </span>
               </div>
             </div>

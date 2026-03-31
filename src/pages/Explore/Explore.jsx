@@ -8,7 +8,7 @@ import {
   recordExpense,
 } from "../../Service/ShiftService";
 import { processCheckout } from "../../Service/OrderService";
-import Receipt from "../../components/Receipt/Receipt"; // IMPORT INI
+import Receipt from "../../components/Receipt/Receipt";
 import toast from "react-hot-toast";
 
 const Explore = () => {
@@ -72,7 +72,7 @@ const Explore = () => {
       (selectedCategory === "All" || p.categoryName === selectedCategory),
   );
 
-  // --- HANDLER: CHECKOUT (SNAPSHOT LOGIC) ---
+  // --- HANDLER: CHECKOUT (FIXED LOGIC) ---
   const handleFinalCheckout = async (e) => {
     e.preventDefault();
     if (cashReceived < totalPrice) return toast.error("Uang kurang!");
@@ -92,35 +92,48 @@ const Explore = () => {
         localStorage.getItem("email"),
         activeShift.id,
       );
-      if (res.data) {
-        // 1. AMBIL SNAPSHOT UNTUK STRUK
-        setLastOrderData({
-          ...orderData,
-          orderNumber: res.data.orderNumber,
-          cash: cashReceived,
-          change: changeAmount,
-          date: new Date().toLocaleString("id-ID"),
-        });
 
-        // 2. MUNCULKAN MODAL SUKSES/STRUK
+      if (res.data) {
+        // --- LOGIKA JAHIT DATA (DATA DB + DATA INPUT) ---
+        // Kita gabungkan data dari Server (id, orderNumber, queueNumber, items dari DB)
+        // dengan data yang cuma ada di Frontend (cashReceived, changeAmount)
+        const snapshotForReceipt = {
+          ...res.data, // Data resmi dari DB
+          cash: cashReceived, // Data inputan (Transient)
+          change: changeAmount, // Data kalkulasi (Transient)
+          // Format tanggal agar seragam
+          date: new Date(res.data.createdAt).toLocaleString("id-ID", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+        };
+
+        // 1. Set snapshot data lengkap untuk Receipt
+        setLastOrderData(snapshotForReceipt);
+
+        // 2. MUNCULKAN STRUK
         setShowReceipt(true);
 
-        // 3. BERSIHKAN KASIR
+        // 3. BERSIHKAN KASIR & TUTUP MODAL
         setCart([]);
         setCustomerName("");
         setTableNumber("");
         setCashReceived("");
         setShowCheckoutModal(false);
+
+        // 4. Sinkronisasi stok produk secara global
         loadData();
+        toast.success("Transaksi Berhasil!");
       }
     } catch (err) {
-      toast.error("Gagal bayar.");
+      console.error("Checkout Error:", err);
+      toast.error("Gagal memproses pembayaran.");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- HANDLERS: SHIFT & EXPENSE (TETAP SAMA) ---
+  // --- HANDLERS: SHIFT & EXPENSE ---
   const handleStartShift = async (e) => {
     e.preventDefault();
     const val = e.target.opening.value;
@@ -246,7 +259,7 @@ const Explore = () => {
         />
       )}
 
-      {/* 2. MODAL CHECKOUT (STYLE LO) */}
+      {/* 2. MODAL CHECKOUT */}
       {showCheckoutModal && (
         <div
           className="modal fade show d-block"
@@ -343,9 +356,131 @@ const Explore = () => {
         </div>
       )}
 
-      {/* MODAL EXPENSE & CLOSE (TETAP SAMA) ... */}
+      {/* MODAL EXPENSE */}
+      {showExpenseModal && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "rgba(0,0,0,0.8)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content bg-dark border-secondary text-light">
+              <div className="modal-header border-secondary">
+                <h5 className="fw-bold m-0 text-warning">CATAT PENGELUARAN</h5>
+                <button
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowExpenseModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleSaveExpense}>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="small fw-bold text-secondary">
+                      DESKRIPSI
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control bg-black text-white border-secondary"
+                      placeholder="Beli es batu / parkir..."
+                      value={expenseData.desc}
+                      onChange={(e) =>
+                        setExpenseData({ ...expenseData, desc: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="small fw-bold text-secondary">
+                      NOMINAL (RP)
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control bg-black text-white border-secondary"
+                      value={expenseData.amount}
+                      onChange={(e) =>
+                        setExpenseData({
+                          ...expenseData,
+                          amount: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer border-secondary">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowExpenseModal(false)}
+                  >
+                    BATAL
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-warning fw-bold px-4"
+                  >
+                    SIMPAN
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* MAIN UI KASIR (GAYA ORIGINAL LO) */}
+      {/* MODAL CLOSE SHIFT */}
+      {showCloseModal && (
+        <div
+          className="modal fade show d-block"
+          style={{ background: "rgba(0,0,0,0.8)" }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content bg-dark border-secondary text-light">
+              <div className="modal-header border-secondary">
+                <h5 className="fw-bold m-0 text-danger">
+                  CLOSE SESSION (BLIND CLOSING)
+                </h5>
+                <button
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowCloseModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleEndShift}>
+                <div className="modal-body p-4 text-center">
+                  <p className="text-secondary small">
+                    Hitung semua uang fisik di laci saat ini dan masukkan
+                    nominalnya di bawah ini.
+                  </p>
+                  <label className="small fw-bold text-secondary mb-2">
+                    TOTAL UANG FISIK (RP)
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control bg-black text-white border-secondary fs-3 py-3 text-center"
+                    value={actualCash}
+                    onChange={(e) => setActualCash(e.target.value)}
+                    required
+                    placeholder="0"
+                  />
+                </div>
+                <div className="modal-footer border-secondary">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowCloseModal(false)}
+                  >
+                    KEMBALI
+                  </button>
+                  <button type="submit" className="btn btn-danger fw-bold px-4">
+                    TUTUP SHIFT & KELUAR
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN UI KASIR */}
       <div className="row g-4">
         <div className="col-lg-8">
           <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
