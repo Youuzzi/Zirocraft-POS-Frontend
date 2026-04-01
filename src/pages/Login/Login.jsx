@@ -16,26 +16,29 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    // WAJIB: Mencegah halaman reload/segarkan otomatis
+    if (e) e.preventDefault();
+
     setLoading(true);
     try {
       const data = await login(email, password);
       if (data && data.token) {
-        // Reset State
+        // Reset state penting
         setActiveShift(null);
 
-        // Simpan ke Context (Reaktif)
+        // Simpan ke Context agar reaktif
         setToken(data.token);
         setUserName(data.name);
-        setRole(data.role); // Set Role di sini!
+        setRole(data.role);
 
         toast.success(`Selamat datang, ${data.name}!`);
         navigate("/dashboard");
       }
     } catch (error) {
+      console.error("Login Error:", error);
       toast.error("Email atau Password salah!");
     } finally {
-      setLoading(false);
+      setLoading(false); // Matikan spinner/loading
     }
   };
 
@@ -49,6 +52,8 @@ const Login = () => {
           </div>
           <p>Silakan login untuk mulai transaksi hari ini</p>
         </div>
+
+        {/* Pastikan menggunakan onSubmit pada tag form */}
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
             <label>Email Address</label>
@@ -58,6 +63,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -68,6 +74,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
             />
           </div>
           <button type="submit" className="btn-login" disabled={loading}>

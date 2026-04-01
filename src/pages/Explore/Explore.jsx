@@ -11,7 +11,6 @@ import { processCheckout } from "../../Service/OrderService";
 import Receipt from "../../components/Receipt/Receipt";
 import toast from "react-hot-toast";
 
-// --- FUNGSI FORMAT MATA UANG ---
 const formatIDR = (value) => {
   if (!value || isNaN(value)) return "Rp 0";
   return new Intl.NumberFormat("id-ID", {
@@ -48,15 +47,16 @@ const Explore = () => {
   const [expenseData, setExpenseData] = useState({ desc: "", amount: "" });
   const [loading, setLoading] = useState(false);
   const [openingInput, setOpeningInput] = useState("");
-
-  // --- LOGIC BARU: PAYMENT TYPE & TAX ---
   const [paymentType, setPaymentType] = useState("CASH");
 
-  // Kalkulasi Pajak Standar Resto
+  // --- LOGIC MASTER AUDIT: IDEMPOTENCY KEY ---
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+
   const subTotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const serviceCharge = Math.round(subTotal * 0.05); // 5%
-  const taxAmount = Math.round((subTotal + serviceCharge) * 0.11); // 11%
-  const grandTotal = subTotal + serviceCharge + taxAmount;
+  const serviceCharge = Math.round(subTotal * 0.05);
+  const taxAmount = Math.round((subTotal + serviceCharge) * 0.11);
+  const rawTotal = subTotal + serviceCharge + taxAmount;
+  const grandTotal = Math.round(rawTotal / 500) * 500;
   const changeAmount = cashReceived ? cashReceived - grandTotal : 0;
 
   const addToCart = (product) => {
@@ -77,7 +77,6 @@ const Explore = () => {
         i.itemId === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i,
       ),
     );
-
   const removeItem = (id) => setCart(cart.filter((i) => i.itemId !== id));
 
   const filteredProducts = products.filter(
@@ -86,20 +85,30 @@ const Explore = () => {
       (selectedCategory === "All" || p.categoryName === selectedCategory),
   );
 
+  // --- LOGIC BARU: BUKA MODAL GENERATE KEY ---
+  const handleOpenCheckout = () => {
+    setIdempotencyKey(crypto.randomUUID());
+    setShowCheckoutModal(true);
+  };
+
+  // --- LOGIC BARU: TUTUP MODAL RESET KEY ---
+  const handleCloseCheckout = () => {
+    setIdempotencyKey("");
+    setShowCheckoutModal(false);
+  };
+
   const handleFinalCheckout = async (e) => {
     e.preventDefault();
-    const currentGrandTotal = grandTotal;
-
-    if (paymentType === "CASH" && cashReceived < currentGrandTotal) {
+    if (paymentType === "CASH" && cashReceived < grandTotal)
       return toast.error("Uang kurang!");
-    }
 
     setLoading(true);
     const orderData = {
       customerName,
       tableNumber,
-      totalAmount: currentGrandTotal,
+      totalAmount: grandTotal,
       paymentType,
+      idempotencyKey, // Kirim key
       items: cart.map((i) => ({ name: i.name, price: i.price, qty: i.qty })),
     };
 
@@ -109,15 +118,13 @@ const Explore = () => {
         localStorage.getItem("email"),
         activeShift.id,
       );
-
       if (res.data) {
+        setIdempotencyKey(""); // BERHASIL: Reset key
         setLastOrderData({
           ...res.data,
-          cash: paymentType === "QRIS" ? currentGrandTotal : cashReceived,
-          change: paymentType === "QRIS" ? 0 : cashReceived - currentGrandTotal,
-          date: new Date().toLocaleString("id-ID"),
+          cash: paymentType === "QRIS" ? grandTotal : cashReceived,
+          change: paymentType === "QRIS" ? 0 : cashReceived - grandTotal,
         });
-
         setShowReceipt(true);
         setCart([]);
         setCustomerName("");
@@ -125,10 +132,11 @@ const Explore = () => {
         setCashReceived("");
         setShowCheckoutModal(false);
         loadData();
-        toast.success("Transaksi Berhasil!");
+        toast.success("Berhasil!");
       }
     } catch (err) {
-      toast.error("Gagal memproses pembayaran.");
+      // ERROR JANGAN RESET: Biar kalau diklik ulang UUID tetap sama & ditolak double bill oleh Backend
+      toast.error(err.response?.data?.error || "Gagal bayar.");
     } finally {
       setLoading(false);
     }
@@ -136,12 +144,11 @@ const Explore = () => {
 
   const handleStartShift = async (e) => {
     e.preventDefault();
-    const val = e.target.opening.value;
     setLoading(true);
     try {
       const res = await openShift({
         userId: localStorage.getItem("email"),
-        openingBalance: val,
+        openingBalance: e.target.opening.value,
       });
       if (res.data) {
         setActiveShift(res.data);
@@ -156,6 +163,7 @@ const Explore = () => {
 
   const handleEndShift = async (e) => {
     e.preventDefault();
+    if (!window.confirm("Akhiri shift & Logout?")) return;
     setLoading(true);
     try {
       const res = await closeShift({
@@ -163,7 +171,8 @@ const Explore = () => {
         actualBalance: actualCash,
       });
       if (res.data) {
-        window.location.reload();
+        localStorage.clear();
+        window.location.href = "/login";
       }
     } catch (err) {
       toast.error("Gagal.");
@@ -275,7 +284,7 @@ const Explore = () => {
                 <button
                   type="button"
                   className="btn-close btn-close-white"
-                  onClick={() => setShowCheckoutModal(false)}
+                  onClick={handleCloseCheckout}
                 ></button>
               </div>
               <form onSubmit={handleFinalCheckout}>
@@ -313,22 +322,14 @@ const Explore = () => {
                     <button
                       type="button"
                       onClick={() => setPaymentType("CASH")}
-                      className={`btn w-100 fw-bold ${
-                        paymentType === "CASH"
-                          ? "btn-info"
-                          : "btn-outline-secondary text-light"
-                      }`}
+                      className={`btn w-100 fw-bold ${paymentType === "CASH" ? "btn-info" : "btn-outline-secondary text-light"}`}
                     >
                       CASH
                     </button>
                     <button
                       type="button"
                       onClick={() => setPaymentType("QRIS")}
-                      className={`btn w-100 fw-bold ${
-                        paymentType === "QRIS"
-                          ? "btn-info"
-                          : "btn-outline-secondary text-light"
-                      }`}
+                      className={`btn w-100 fw-bold ${paymentType === "QRIS" ? "btn-info" : "btn-outline-secondary text-light"}`}
                     >
                       QRIS / DEBIT
                     </button>
@@ -386,7 +387,7 @@ const Explore = () => {
                   <button
                     type="button"
                     className="btn btn-secondary px-4"
-                    onClick={() => setShowCheckoutModal(false)}
+                    onClick={handleCloseCheckout}
                   >
                     BATAL
                   </button>
@@ -433,7 +434,7 @@ const Explore = () => {
                     <input
                       type="text"
                       className="form-control bg-black text-white border-secondary"
-                      placeholder="Beli es batu / parkir..."
+                      placeholder="Beli es batu..."
                       value={expenseData.desc}
                       onChange={(e) =>
                         setExpenseData({ ...expenseData, desc: e.target.value })
@@ -503,7 +504,7 @@ const Explore = () => {
               <form onSubmit={handleEndShift}>
                 <div className="modal-body p-4 text-center">
                   <p className="text-secondary small">
-                    Input total uang fisik di laci.
+                    Input total uang fisik di laci saat ini.
                   </p>
                   <label className="small fw-bold text-secondary mb-2">
                     TOTAL FISIK (RP)
@@ -515,6 +516,9 @@ const Explore = () => {
                     onChange={(e) => setActualCash(e.target.value)}
                     required
                   />
+                  <div className="text-info small fw-bold text-center mt-2">
+                    Terinput: {formatIDR(actualCash)}
+                  </div>
                 </div>
                 <div className="modal-footer border-secondary">
                   <button
@@ -525,7 +529,7 @@ const Explore = () => {
                     BATAL
                   </button>
                   <button type="submit" className="btn btn-danger fw-bold px-4">
-                    TUTUP SHIFT
+                    TUTUP SHIFT & KELUAR
                   </button>
                 </div>
               </form>
@@ -539,23 +543,35 @@ const Explore = () => {
           <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25">
             <div className="page-title-section">
               <div className="d-flex align-items-center gap-3 mb-2">
-                <h2 className="fw-bold m-0 text-white">
+                <h2
+                  className="fw-bold m-0 text-white"
+                  style={{ letterSpacing: "1px" }}
+                >
                   <i className="bi bi-cash-stack me-2 text-info"></i> CASHIER
                 </h2>
-                <span className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                <span
+                  className="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25"
+                  style={{ fontSize: "10px", padding: "5px 12px" }}
+                >
                   ● SHIFT ACTIVE
                 </span>
               </div>
               <div className="d-flex align-items-center gap-2">
-                <span className="text-secondary fw-bold small">
+                <span
+                  className="text-secondary fw-bold"
+                  style={{ fontSize: "10px", letterSpacing: "2px" }}
+                >
                   {settings?.storeName?.toUpperCase() || "ZIROSHOP"} POS
                 </span>
                 <button
                   className="btn btn-sm rounded-pill ms-2"
                   style={{
                     fontSize: "10px",
+                    fontWeight: "800",
                     background: "rgba(255, 193, 7, 0.1)",
                     color: "#ffc107",
+                    border: "1px solid rgba(255, 193, 7, 0.2)",
+                    padding: "2px 10px",
                   }}
                   onClick={() => setShowExpenseModal(true)}
                 >
@@ -565,8 +581,11 @@ const Explore = () => {
                   className="btn btn-sm rounded-pill ms-1"
                   style={{
                     fontSize: "10px",
+                    fontWeight: "800",
                     background: "rgba(220, 53, 69, 0.1)",
                     color: "#dc3545",
+                    border: "1px solid rgba(220, 53, 69, 0.2)",
+                    padding: "2px 10px",
                   }}
                   onClick={() => setShowCloseModal(true)}
                 >
@@ -600,13 +619,16 @@ const Explore = () => {
                 className="product-card"
                 onClick={() => item.stock > 0 && addToCart(item)}
               >
-                <div className="product-img-box">
+                <div
+                  className="product-img-box"
+                  style={{ position: "relative" }}
+                >
                   {item.imgUrl ? (
                     <img src={item.imgUrl} alt={item.name} />
                   ) : (
                     <i className="bi bi-cup-hot text-secondary fs-1"></i>
                   )}
-                  {item.stock <= 0 && (
+                  {item.stock <= 0 ? (
                     <div
                       className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                       style={{
@@ -617,7 +639,14 @@ const Explore = () => {
                     >
                       OUT OF STOCK
                     </div>
-                  )}
+                  ) : item.stock < 5 ? (
+                    <div
+                      className="position-absolute top-0 end-0 m-2 badge bg-warning text-dark shadow-sm"
+                      style={{ fontSize: "10px", fontWeight: "800" }}
+                    >
+                      RUNNING OUT
+                    </div>
+                  ) : null}
                 </div>
                 <div className="product-info">
                   <h6 className="text-truncate text-white">{item.name}</h6>
@@ -628,7 +657,7 @@ const Explore = () => {
                     <small
                       className={
                         item.stock < 5
-                          ? "text-danger fw-bold"
+                          ? "text-warning fw-bold"
                           : "text-secondary"
                       }
                     >
@@ -646,7 +675,12 @@ const Explore = () => {
             style={{ top: "90px" }}
           >
             <div className="p-4 border-bottom border-secondary bg-black bg-opacity-10 d-flex justify-content-between align-items-center">
-              <h5 className="fw-bold m-0 text-white">ORDER DETAILS</h5>
+              <h5
+                className="fw-bold m-0 text-white"
+                style={{ letterSpacing: "1px" }}
+              >
+                ORDER DETAILS
+              </h5>
               <span className="badge rounded-pill bg-info text-dark px-3 fw-bold">
                 {cart.length} ITEMS
               </span>
@@ -654,7 +688,7 @@ const Explore = () => {
             <div className="cart-items-container">
               {cart.map((item) => (
                 <div key={item.itemId} className="cart-item-row p-3">
-                  <div className="d-flex justify-content-between mb-2">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
                     <div style={{ flex: 1 }}>
                       <h6 className="m-0 fw-bold text-white text-truncate">
                         {item.name}
@@ -719,7 +753,6 @@ const Explore = () => {
                   <span>Rp {taxAmount.toLocaleString()}</span>
                 </div>
               </div>
-
               <div className="d-flex justify-content-between mb-4 align-items-center">
                 <span className="fw-bold text-white">TOTAL BILL</span>
                 <span className="total-price-text">
@@ -729,7 +762,7 @@ const Explore = () => {
               <button
                 className="btn-pay py-3 shadow"
                 disabled={cart.length === 0}
-                onClick={() => setShowCheckoutModal(true)}
+                onClick={handleOpenCheckout}
               >
                 CHECKOUT NOW <i className="bi bi-arrow-right-short ms-1"></i>
               </button>

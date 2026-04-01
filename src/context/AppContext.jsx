@@ -18,8 +18,8 @@ export const AppContextProvider = (props) => {
   const [settings, setSettings] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // --- FUNGSI UTAMA LOAD DATA ---
   const loadData = async () => {
+    // Jika tidak ada token, bersihkan state dan berhenti
     if (!token || token === "[object Object]" || token === "undefined") {
       setActiveShift(null);
       setIsDataLoaded(true);
@@ -27,7 +27,10 @@ export const AppContextProvider = (props) => {
     }
 
     try {
+      // SET LOADING FALSE saat pindah akun agar UI ter-reset
+      setIsDataLoaded(false);
       const userId = localStorage.getItem("email");
+
       const [resCat, resItems, resShift, resSettings] = await Promise.all([
         fetchCategories(),
         fetchItems(),
@@ -39,6 +42,7 @@ export const AppContextProvider = (props) => {
       if (resItems.data) setProducts(resItems.data);
       if (resSettings.data) setSettings(resSettings.data);
 
+      // Pastikan data shift valid dan statusnya OPEN
       if (
         resShift.data &&
         resShift.data.id &&
@@ -46,13 +50,15 @@ export const AppContextProvider = (props) => {
       ) {
         setActiveShift(resShift.data);
       } else {
-        setActiveShift(null);
+        setActiveShift(null); // Jika tidak ada shift OPEN, paksa NULL biar muncul modal input modal
       }
 
       setIsDataLoaded(true);
       console.log("AppContext: Sinkronisasi Berhasil!");
     } catch (err) {
       console.error("AppContext Error:", err);
+      // Jika terjadi error (seperti 403), paksa reset
+      setActiveShift(null);
       setIsDataLoaded(true);
     }
   };
@@ -77,7 +83,7 @@ export const AppContextProvider = (props) => {
     settings,
     setSettings,
     isDataLoaded,
-    loadData, // <--- NAMA FUNGSI RESMI ADALAH loadData
+    loadData,
   };
 
   return (
