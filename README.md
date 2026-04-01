@@ -22,7 +22,7 @@ Selamat datang di repository Frontend **Zirocraft POS**, sebuah antarmuka kasir 
 ### 🚀 Cara Menjalankan Project
 1. **Clone** repository ini:
    ```bash
-   git clone [https://github.com/Youuzzi/Zirocraft-POS-Frontend.git](https://github.com/Youuzzi/Zirocraft-POS-Frontend.git)
+   git clone [https://github.com/Youuzzi/Zirocraft-POS-Frontend.git]
 Install: Jalankan perintah berikut untuk menginstall library:
 
 Bash
