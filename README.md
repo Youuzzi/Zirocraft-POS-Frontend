@@ -1,24 +1,36 @@
-# Zirocraft POS - Frontend 🚀
+# Zirocraft POS - Frontend Interface 🚀💻
 
-Selamat datang di repository Frontend **Zirocraft POS**, sebuah sistem Point of Sales (Kasir) modern yang dibangun untuk efisiensi transaksi. Proyek ini merupakan bagian dari ekosistem Fullstack Spring Boot & React.
+Selamat datang di repository Frontend **Zirocraft POS**, sebuah antarmuka kasir modern yang dirancang untuk efisiensi transaksi dengan estetika minimalis khas **Zirocraft Studio**. Proyek ini merupakan bagian dari ekosistem Fullstack Spring Boot & React.
 
-## 🛠️ Tech Stack
-- **React.js** (Vite)
-- **Tailwind CSS** / **Bootstrap** (sesuaikan yang kamu pakai)
-- **Axios** (untuk integrasi API)
-- **React Router Dom**
+### 🔗 Related Repository
+* **Backend API:** [Zirocraft-POS-Backend](https://github.com/Youuzzi/Zirocraft-POS-Backend)
 
-## ✨ Fitur Utama (Ongoing)
-- Dashboard Penjualan yang intuitif.
-- Manajemen Produk & Inventaris.
-- Sistem Kasir (Checkout) yang responsif.
-- Integrasi real-time dengan Backend API.
+### 🛠️ Tech Stack
+* **React.js 18** (Vite)
+* **Bootstrap 5** & **Custom CSS** (Zirocraft Studio Dark Mode Aesthetic)
+* **Axios** (Integrasi API dengan Interceptor untuk Token Handling)
+* **React Router Dom v6**
+* **React Hot Toast** (Notifikasi Real-time)
 
-## 🚀 Cara Menjalankan Project
-1. Clone repository ini.
-2. Jalankan `npm install` untuk menginstall library.
-3. Buat file `.env` dan sesuaikan `VITE_API_URL` ke backend kamu.
-4. Jalankan `npm run dev`.
+### ✨ Fitur Unggulan (v1.0 Stable)
+* **Interactive Cashier:** Sistem keranjang belanja yang responsif dengan validasi stok *real-time*.
+* **Resilient Payment:** Manajemen *Idempotency Key* berbasis `localStorage` untuk menjaga keamanan transaksi saat terjadi gangguan jaringan.
+* **Industrial UI/UX:** Dark mode dengan aksen **Cyan (#0dcaf0)** untuk kenyamanan mata saat penggunaan durasi panjang.
+* **Smart Stock Alerts:** Indikator visual *"RUNNING OUT"* otomatis jika stok produk di bawah ambang batas (5 unit).
+* **Multi-Format Receipt:** Preview struk belanja digital dan optimasi tata letak untuk *Thermal Printer*.
 
----
-*Developed with ❤️ by [Yozi Heru Maulana](https://github.com/Youuzzi)*
+### 🚀 Cara Menjalankan Project
+1. **Clone** repository ini:
+   ```bash
+   git clone [https://github.com/Youuzzi/Zirocraft-POS-Frontend.git](https://github.com/Youuzzi/Zirocraft-POS-Frontend.git)
+Install: Jalankan perintah berikut untuk menginstall library:
+
+Bash
+npm install
+Environment: Pastikan Backend API kamu sudah berjalan di http://localhost:8080.
+
+Run: Jalankan aplikasi dengan perintah:
+
+Bash
+npm run dev
+Powered by Zirocraft Studio | Aesthetic. Reliability. Performance.
