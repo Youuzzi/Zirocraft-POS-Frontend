@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import "./Explore.css";
 import { AppContext } from "../../context/AppContext";
 import CategoryList from "../../CategoryList/CategoryList";
@@ -49,7 +49,7 @@ const Explore = () => {
   const [openingInput, setOpeningInput] = useState("");
   const [paymentType, setPaymentType] = useState("CASH");
 
-  // --- LOGIC MASTER AUDIT: IDEMPOTENCY KEY ---
+  // --- LOGIC MASTER AUDIT: PERSISTENT IDEMPOTENCY KEY ---
   const [idempotencyKey, setIdempotencyKey] = useState("");
 
   const subTotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
@@ -77,6 +77,7 @@ const Explore = () => {
         i.itemId === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i,
       ),
     );
+
   const removeItem = (id) => setCart(cart.filter((i) => i.itemId !== id));
 
   const filteredProducts = products.filter(
@@ -85,16 +86,24 @@ const Explore = () => {
       (selectedCategory === "All" || p.categoryName === selectedCategory),
   );
 
-  // --- LOGIC BARU: BUKA MODAL GENERATE KEY ---
+  // --- LOGIC BARU: BUKA MODAL GENERATE PERSISTENT KEY ---
   const handleOpenCheckout = () => {
-    setIdempotencyKey(crypto.randomUUID());
+    let savedKey = localStorage.getItem("pending_idempotency_key");
+    if (!savedKey) {
+      savedKey = crypto.randomUUID();
+      localStorage.setItem("pending_idempotency_key", savedKey);
+    }
+    setIdempotencyKey(savedKey);
     setShowCheckoutModal(true);
   };
 
   // --- LOGIC BARU: TUTUP MODAL RESET KEY ---
   const handleCloseCheckout = () => {
-    setIdempotencyKey("");
-    setShowCheckoutModal(false);
+    if (!loading) {
+      localStorage.removeItem("pending_idempotency_key");
+      setIdempotencyKey("");
+      setShowCheckoutModal(false);
+    }
   };
 
   const handleFinalCheckout = async (e) => {
@@ -104,11 +113,11 @@ const Explore = () => {
 
     setLoading(true);
     const orderData = {
-      customerName,
+      customerName: customerName || "Walk-in",
       tableNumber,
       totalAmount: grandTotal,
       paymentType,
-      idempotencyKey, // Kirim key
+      idempotencyKey,
       items: cart.map((i) => ({ name: i.name, price: i.price, qty: i.qty })),
     };
 
@@ -119,11 +128,15 @@ const Explore = () => {
         activeShift.id,
       );
       if (res.data) {
-        setIdempotencyKey(""); // BERHASIL: Reset key
+        // SUKSES: Reset Kunci
+        localStorage.removeItem("pending_idempotency_key");
+        setIdempotencyKey("");
+
         setLastOrderData({
           ...res.data,
           cash: paymentType === "QRIS" ? grandTotal : cashReceived,
           change: paymentType === "QRIS" ? 0 : cashReceived - grandTotal,
+          date: new Date().toLocaleString("id-ID"),
         });
         setShowReceipt(true);
         setCart([]);
@@ -132,11 +145,11 @@ const Explore = () => {
         setCashReceived("");
         setShowCheckoutModal(false);
         loadData();
-        toast.success("Berhasil!");
+        toast.success("Transaksi Berhasil!");
       }
     } catch (err) {
       // ERROR JANGAN RESET: Biar kalau diklik ulang UUID tetap sama & ditolak double bill oleh Backend
-      toast.error(err.response?.data?.error || "Gagal bayar.");
+      toast.error(err.response?.data?.error || "Gagal memproses pembayaran.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +161,7 @@ const Explore = () => {
     try {
       const res = await openShift({
         userId: localStorage.getItem("email"),
-        openingBalance: e.target.opening.value,
+        openingBalance: openingInput,
       });
       if (res.data) {
         setActiveShift(res.data);
@@ -250,8 +263,9 @@ const Explore = () => {
             <button
               type="submit"
               className="btn btn-info w-100 fw-bold py-3 shadow"
+              disabled={loading}
             >
-              MULAI SHIFT
+              {loading ? "PROCESSING..." : "MULAI SHIFT"}
             </button>
           </form>
         </div>
@@ -300,7 +314,6 @@ const Explore = () => {
                         placeholder="Nama..."
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        required
                       />
                     </div>
                     <div className="col-md-4">
@@ -399,7 +412,7 @@ const Explore = () => {
                       (paymentType === "CASH" && cashReceived < grandTotal)
                     }
                   >
-                    BAYAR
+                    {loading ? "SAVING..." : "BAYAR"}
                   </button>
                 </div>
               </form>
@@ -669,6 +682,7 @@ const Explore = () => {
             ))}
           </div>
         </div>
+
         <div className="col-lg-4">
           <div
             className="cart-sidebar shadow-lg sticky-top"
